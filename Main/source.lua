@@ -148,7 +148,7 @@ local JobId = game.JobId;
 
 -- // Define Settings
 
-local ExecutionSettings = shared.Settings;
+local ExecutionSettings = shared.ExecutionSettings;
 
 -- // Declare Character & Character Parts
 
