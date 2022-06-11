@@ -52,20 +52,6 @@ if (not syn) then
     loadstring(game:HttpGet('https://irisapp.ca/api/Scripts/IrisBetterCompat.lua'))();
 end;
 
--- // Check for settings
-
-if (not shared.ExecutionSettings) then 
-
-    shared.ExecutionSettings = {
-        ['Silent Load'] = false; -- // Loads without notifications
-        ['Execute On Teleport'] = true; -- // Executes the script on teleport
-        ['Execution Delay'] = 0; -- // Delay for the script
-        ['Auto Load Config'] = true; -- // Load the set auto load config
-        ['Auto Load Theme'] = true; -- // Load the set auto load theme
-        ['Debug'] = false; -- // Enabled debug tab (not recommended)
-    };
-
-end;
 
 -- // Needed Folders
 
@@ -88,23 +74,23 @@ end;
 -- // Write the required files
 
 if (not isfile('Xenny-Ware/Required/Library.lua')) then 
-    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/library.lua'));
+    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/Library.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/SaveManager.lua')) then 
-    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/modified.lua'));
+    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/ModifiedSaveManager.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/Maid.lua')) then
-    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/maid.lua'));
+    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/Maid.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ESP.lua')) then 
-    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/esp.lua'));
+    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/ESP.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then 
-    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/theme_manager.lua'));
+    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/theme_manager.lua'));
 end;
 
 
@@ -146,9 +132,6 @@ local Mouse = Player:GetMouse();
 local PlaceId = game.PlaceId;
 local JobId = game.JobId;
 
--- // Define Settings
-
-local ExecutionSettings = shared.ExecutionSettings;
 
 -- // Declare Character & Character Parts
 
@@ -187,18 +170,12 @@ local function Create(Name, LoadRage)
     Settings = Window:AddTab('Settings');
 
     SaveManager:BuildConfigSection(Settings);
-
-    if (ExecutionSettings['Auto Load Config']) then 
-        SaveManager:LoadAutoloadConfig();
-    end;
+    SaveManager:LoadAutoloadConfig();
 
     Themes = Settings:AddLeftGroupbox('Themes');
 
     ThemeManager:CreateThemeManager(Themes);
-
-    if (ExecutionSettings['Auto Load Theme']) then 
-        ThemeManager:LoadDefault();
-    end;
+    ThemeManager:LoadDefault();
 
 end;
 
@@ -377,7 +354,6 @@ function Teleport()
     end
 end
 
-task.wait(ExecutionSettings['Execution Delay']);
 
 -- // Load universal features
 
@@ -2564,9 +2540,7 @@ else -- // Universal
     LoadUniversal();
 end;
 
-if (ExecutionSettings['Silent Load'] == false) then 
     Library:Notify('Xenny-Ware | Created by xenny#0001 (642209011994722304) | https://youtube.com/c/xenny | enjoy!');
     Library:Notify('Successfully Loaded in: ' .. os.time() - Start .. '.');
-end;
 
 Start = nil -- // :3
