@@ -54,7 +54,7 @@ end;
 
 -- // Check for settings
 
-if (shared.Settings == nil) then 
+if (not shared.Settings) then 
 
     shared.Settings = {
         ['Silent Load'] = false; -- // Loads without notifications
@@ -104,7 +104,7 @@ if (not isfile('Xenny-Ware/Required/ESP.lua')) then
 end;
 
 if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then 
-    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/theme_manager.lua'));
+    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/theme_manager.lua'));
 end;
 
 
