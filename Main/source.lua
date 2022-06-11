@@ -54,9 +54,9 @@ end;
 
 -- // Check for settings
 
-if (not shared.Settings) then 
+if (not shared.ExecutionSettings) then 
 
-    shared.Settings = {
+    shared.ExecutionSettings = {
         ['Silent Load'] = false; -- // Loads without notifications
         ['Execute On Teleport'] = true; -- // Executes the script on teleport
         ['Execution Delay'] = 0; -- // Delay for the script
