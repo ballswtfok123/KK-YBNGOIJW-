@@ -148,7 +148,7 @@ local JobId = game.JobId;
 
 -- // Define Settings
 
-local Settings = shared.Settings  ~= nil and shared.Settings or nil;
+local ExecutionSettings = shared.Settings;
 
 -- // Declare Character & Character Parts
 
@@ -188,7 +188,7 @@ local function Create(Name, LoadRage)
 
     SaveManager:BuildConfigSection(Settings);
 
-    if (Settings['Auto Load Config']) then 
+    if (ExecutionSettings['Auto Load Config']) then 
         SaveManager:LoadAutoloadConfig();
     end;
 
@@ -196,7 +196,7 @@ local function Create(Name, LoadRage)
 
     ThemeManager:CreateThemeManager(Themes);
 
-    if (Settings['Auto Load Theme']) then 
+    if (ExecutionSettings['Auto Load Theme']) then 
         ThemeManager:LoadDefault();
     end;
 
@@ -377,7 +377,7 @@ function Teleport()
     end
 end
 
-task.wait(Settings['Execution Delay']);
+task.wait(ExecutionSettings['Execution Delay']);
 
 -- // Load universal features
 
@@ -2564,7 +2564,7 @@ else -- // Universal
     LoadUniversal();
 end;
 
-if (Settings['Silent Load'] == false) then 
+if (ExecutionSettings['Silent Load'] == false) then 
     Library:Notify('Xenny-Ware | Created by xenny#0001 (642209011994722304) | https://youtube.com/c/xenny | enjoy!');
     Library:Notify('Successfully Loaded in: ' .. os.time() - Start .. '.');
 end;
