@@ -88,19 +88,19 @@ end;
 -- // Write the required files
 
 if (not isfile('Xenny-Ware/Required/Library.lua')) then 
-    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/Library.lua'));
+    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/library.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/SaveManager.lua')) then 
-    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/ModifiedSaveManager.lua'));
+    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/modified.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/Maid.lua')) then
-    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/Maid.lua'));
+    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/maid.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ESP.lua')) then 
-    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/ESP.lua'));
+    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/esp.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then 
