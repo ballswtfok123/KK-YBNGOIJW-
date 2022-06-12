@@ -11,7 +11,8 @@ local LocalizationService = game:GetService("LocalizationService")
         Kiriot22: ESP lib (i still suck at math :cry:)
         Averiias, Stefanuk12, xaxa: Help with silent aim (by help i mean i kinda just learned off of their universal silent aim because i was too lazy to learn it and its like 4 am rn im sorry)
         Quenty: maid module
-        xenny#0001 (everything else)
+        arson: hydroxide (i love you)
+        xenny#0001: everything else
 
         if you find anything that you made that you want credit for that i mightve used without crediting you, just dm me on discord (sometimes i forget or dont know the original creator sorry)
 ]]
@@ -369,20 +370,20 @@ local function LoadUniversal()
     TabH = Main:AddRightTabbox('');
     LocalBox = TabH:AddTab('Local');
 
-    local CircleSettings = Main:AddLeftGroupbox('Circle Settings');
-    local HitboxExpander = Main:AddRightGroupbox('Hitbox Expander');
+    CircleSettings = Main:AddLeftGroupbox('Circle Settings');
+    HitboxExpander = Main:AddRightGroupbox('Hitbox Expander');
     TabHolder = Visuals:AddLeftTabbox('ESP');
-    local ESP = TabHolder:AddTab('ESP');
-    local Chams = TabHolder:AddTab('Chams');
+    ESP = TabHolder:AddTab('ESP');
+    Chams = TabHolder:AddTab('Chams');
 
-    local World = Visuals:AddRightGroupbox('World');
-    local TabHolder = Visuals:AddLeftTabbox();
+    World = Visuals:AddRightGroupbox('World');
+    TabHolder = Visuals:AddLeftTabbox();
 
-    local Self = TabHolder:AddTab('Self');
-    local Render  = TabHolder:AddTab('Render');
+    Self = TabHolder:AddTab('Self');
+    Render  = TabHolder:AddTab('Render');
 
-    local PlayerBox = Misc:AddRightGroupbox('Players Info');
-    local Server = Misc:AddLeftGroupbox('Server');
+    PlayerBox = Misc:AddRightGroupbox('Players Info');
+    Server = Misc:AddLeftGroupbox('Server');
 
     Luas = Settings:AddLeftGroupbox('Luas');
 
@@ -925,11 +926,11 @@ local function LoadUniversal()
             return;
         end;
 
-        local TargetPlayer = Players:FindFirstChild(GetProperty('PlrTarget')) or 'nil';
-        local TargetTeam = TargetPlayer.Team ~= nil and TargetPlayer.Team ~= '' and TargetPlayer.Team or 'Not Found';
-        local StudsAway = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(TargetPlayer.Character:FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
-        local CurrentHealth = TargetPlayer ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid') and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health or 0;
-        local CurrentTool = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Tool') and TargetPlayer.Character:FindFirstChildOfClass('Tool').Name or 'None';
+        TargetPlayer = Players:FindFirstChild(GetProperty('PlrTarget')) or 'nil';
+        TargetTeam = TargetPlayer.Team ~= nil and TargetPlayer.Team ~= '' and TargetPlayer.Team or 'Not Found';
+        StudsAway = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(TargetPlayer.Character:FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
+        CurrentHealth = TargetPlayer ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid') and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health or 0;
+        CurrentTool = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Tool') and TargetPlayer.Character:FindFirstChildOfClass('Tool').Name or 'None';
 
         DisplayName:SetText('Display Name: ' .. TargetPlayer.DisplayName);
         UserId:SetText('User ID: ' .. TargetPlayer.UserId);
@@ -2321,6 +2322,10 @@ elseif (PlaceId == 142823291) then
             Text = 'Velocity Override';
         });
 
+        local KillAll = GameFunctions:AddToggle('KillAll', {
+            Text = 'Kill All';
+        });
+
         -- // Hook stuff
 
         local Old, Old2;
@@ -2402,11 +2407,10 @@ elseif (PlaceId == 142823291) then
             
             if (IsEnabled('SilentAim')) and (Method:lower() == 'findpartonraywithignorelist') and (GetSilentAimTarget() ~= nil)  then 
 
-
                 local Closest = GetSilentAimTarget();
 
                 if (Closest ~= nil) then 
-                    Args[1] = Ray.new(Camera.CFrame.Position, (Closest.Position - Camera.CFrame.Position).Unit * 1000);
+                    Args[1] = Ray.new(Args[1].Origin, (Closest.Position - Args[1].Origin).Unit * 1000);
                     return OldNameCall(self, unpack(Args));
                 end;
             end;
@@ -2583,6 +2587,205 @@ elseif (PlaceId == 142823291) then
             end;
       end);
         
+    elseif (true) or (PlaceID == 2000064164) then -- // State of anarchy
+        
+        Create('State of Anarchy');
+        LoadUniversal();
+
+        local Connections = ReplicatedStorage:WaitForChild('Connections', 9e9);
+        local Interactables = workspace:WaitForChild('Interactable', 9e9);
+
+        local PickUps = Interactables.PickUps;
+        local ContainersPath = Interactables.Containers;
+
+        local SilentTab = TabB:AddTab('Silent Aim');
+        local Containers = {};
+        local PickUp = {};
+
+        local GameFunctions = Misc:AddLeftGroupbox('Game Functions');
+
+        local function GetEquippedGun(Inst)
+            if (Inst ~= nil) then 
+                for Index, Value in next, Inst:GetChildren() do 
+                    if (Value:IsA('Model')) and (Value.Name ~= 'Clothing') then 
+                        return Value.Name;
+                    end;
+                end;
+            end;
+
+            return nil;
+        end;
+
+        local SilentAimCircle = Drawing.new('Circle');
+        SilentAimCircle.Radius = 100;
+        SilentAimCircle.Color = Color3.fromRGB(255, 255, 255);
+        SilentAimCircle.Visible = false;
+
+        local function Hit(Plr)
+
+            if (Plr == nil) or (Plr.Character == nil) or (not Plr.Character:FindFirstChild('Head')) then print'Check Failed'; return end;
+
+            -- // found DA KILL REMOTE EZAZZZZZ (:scream:) (:cream:
+
+            local ohString1 = "Head"
+            local ohVector32 = Vector3.new(-2627.53662109375, 199.0116424560547, 285.17047119140625)
+            local ohVector33 = Vector3.new(-2625.343994140625, 198.93568420410156, 283.556396484375)
+            local ohInstance4 = Plr
+            local ohString5 = '.22 Long Rifle';
+            local ohVector36 = Vector3.new(-2884.3603515625, 199.69235229492188, 395.09503173828125)
+            local ohTable7 = {
+                [1] =  -2884.88916015625, 200.12826538085938, 384.3685302734375,
+                [2] = Plr.Character.Head,
+                [3] =  -2885.21142578125, 200.39219665527344, 377.8313293457031,
+                [4] =  -0.9473804831504822, 0.24329611659049988, 0.20803231000900269,
+                [5] = 318,
+                [6] = Plr
+            }
+            
+            ReplicatedStorage.Connections.HitEvent:FireServer(ohString1, ohVector32, ohVector33, ohInstance4, ohString5, ohVector36, ohTable7)
+        end;
+        
+        for Index, Value in next, ContainersPath:GetChildren() do 
+            Containers[Value] = Value.Name; 
+        end;
+
+        for Index, Value in next, PickUps:GetChildren() do 
+            PickUp[Value] = Value.Name;
+        end;
+
+        local Containerz = GameFunctions:AddDropdown('Container', {
+            Text = 'Containers';
+            Values = Containers;
+            AllowNull = true;
+        });
+
+        local PickUpz = GameFunctions:AddDropdown('PickUp', {
+            Text = 'Pick Ups';
+            Values = PickUp;
+            AllowNull = true;
+        });
+
+        local SilentAim = SilentTab:AddToggle('SilentAim', {
+            Text = 'Toggle';
+        });
+
+        local VisualizeFOV = SilentTab:AddToggle('SilentVis', {
+            Text = 'Visualize FOV';
+        }):AddColorPicker('SilentColor', {
+            Text = 'FOV Circle Color';
+            Default = Color3.fromRGB(255, 255, 255);
+        });
+
+        local SilentFOV = SilentTab:AddSlider('SilentFOV', {
+            Text = 'Field of View';
+            Min = 0;
+            Max = 350;
+            Default = 150;
+            Rounding = 3;
+        });
+
+        local Part = SilentTab:AddDropdown('SilentBody', {
+            Text = 'Silent Body Part';
+            Values = ListCharacterParts();
+        });
+
+        local GoToContainer = GameFunctions:AddButton('Teleport To Container', function()
+            if (Character ~= nil) and (Character:FindFirstChild('Head')) and (GetProperty('Container') ~= nil) then 
+                RootPart.CFrame = ContainerPath:FindFirstChild(GetProperty('Container')):FindFirstChildOfClass('MeshPart').CFrame;
+            end;
+        end);
+
+        local GoToPickup = GameFunctions:AddButton('Teleport To Pick Up', function()
+            if (Character ~= nil) and (Character:FindFirstChild('Head')) and (GetProperty('PickUp') ~= nil) then 
+                RootPart.CFrame = PickUps:FindFirstChild(GetProperty('PickUp')):FindFirstChildOfClass('Part').CFrame;
+            end;
+        end);
+
+
+        local KillPlayer = PlayerBox:AddButton('Kill Player', function()
+            if (TargetPlayer ~= nil) and (TargetPlayer.Character ~= nil) and (TargetPlayer.Character:FindFirstChild('Head')) and (GetEquippedGun(Character) ~= nil) then 
+                Hit(TargetPlayer);
+            end;
+        end);
+
+        local LoopKill = PlayerBox:AddToggle('LoopKill', {
+            Text = 'Loop Kill';
+        });
+
+        local KillAll = GameFunctions:AddToggle('KillAll', {
+            Text = 'Kill All';
+        });
+
+        local function GetSilentAimTarget()
+            for Index, Value in next, Players:GetPlayers() do 
+
+                if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChildOfClass('Humanoid'))  and (Value.Character:FindFirstChild(GetProperty('SilentBody'))) then
+
+                      local worldPoint = Value.Character[GetProperty('SilentBody')].Position;
+                      local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
+
+                      if (not onScreen) then 
+                          continue;
+                      end;
+
+                    
+
+                      local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
+    
+                      if (magnitude <= GetProperty('SilentFOV')) and (Value.Character ~= nil) and (onScreen) then 
+                        print(Value.Name);
+                          return Value.Character[GetProperty('SilentBody')];
+                      end;
+                end;
+            end;
+
+            return nil;
+        end;
+
+        OldNameCall = hookmetamethod(game, '__namecall', newcclosure(function(self, ...)
+            
+            local Args = { ... };
+            local Method = getnamecallmethod();
+
+
+            
+            if (IsEnabled('SilentAim')) and (Method:lower() == 'fireserver') and (tostring(self) == 'HitEvent') and (GetSilentAimTarget() ~= nil) then 
+                local Closest = GetSilentAimTarget();
+
+                Args[1] = GetProperty('SilentBody');
+                Args[4] = Players:FindFirstChild(GetSilentAimTarget().Parent.Name);
+                print'hooked';
+                if (Args[7] ~= nil) and (type(Args[7] == 'table')) and (Args[7][2] ~= nil) and (Args[7][6] ~= nil) then 
+                    Args[7][2] = GetSilentAimTarget();
+                    Args[7][6] = Players:FindFirstChild(GetSilentAimTarget().Parent.Name);
+                end;
+
+                return OldNameCall(self, unpack(Args));
+            end;
+
+            return OldNameCall(self, ...);
+        end))
+
+        RunService.RenderStepped:Connect(function()
+
+            SilentAimCircle.Visible = IsEnabled('SilentVis');
+            SilentAimCircle.Radius = GetProperty('SilentFOV');
+            SilentAimCircle.Color = GetProperty('SilentColor');
+            SilentAimCircle.Position = WTS(Mouse.hit.p);
+            SilentAimCircle.Thickness = 1;
+
+            if (IsEnabled('LoopKill')) and (TargetPlayer ~= nil) and (TargetPlayer.Character ~= nil) and (TargetPlayer.Character:FindFirstChild('Head')) then 
+                Hit(TargetPlayer);
+            end;
+
+            if (IsEnabled('KillAll')) then 
+                for Index, Value in next, Players:GetPlayers() do 
+                    if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('Head')) then 
+                        Hit(Value);
+                    end;
+                end;
+            end;
+        end);
 
 else -- // Universal
 
