@@ -555,7 +555,7 @@ local function LoadUniversal()
         Text = 'Fly';
         Default = 'NONE';
     }):OnChanged(function()
-        if (not IsEnabled('Fly')) or (not IsKeyDown('BindFly')) and (Character ~= nil) and (RootPart ~= nil) then 
+        if (not IsEnabled('Fly')) or (not Options.BindFly.Toggled) and (Character ~= nil) and (RootPart ~= nil) then 
             RootPart.Anchored = false
         end;
     end);
@@ -1333,7 +1333,7 @@ local function LoadUniversal()
 
             -- // Stolen from old src, too lazy
 
-            if (IsEnabled('Fly')) or (IsKeyDown('BindFly')) and (GetProperty('FlyMethod') == 'CFrame') then 
+            if (IsEnabled('Fly')) or (Options.BindFly.Toggled == true) and (GetProperty('FlyMethod') == 'CFrame') then 
                local  HRP = RootPart -- // sowwy ><
                 HRP.Anchored = true;
                 local Keys, v3, cf = Enum.KeyCode, Vector3.new(), CFrame.new()
@@ -1762,7 +1762,7 @@ elseif (PlaceId == 142823291) then
 
                   print(Value.Name);
                   
-                  local worldPoint = Value.Character[GetProperty('SilentBodyPart')].Position;
+                  local worldPoint = Value.Character:FindFirstChild(GetProperty('SilentBodyPart')).Position;
                   local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
                   local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
 
@@ -2721,7 +2721,7 @@ elseif (PlaceId == 142823291) then
 
                 if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChildOfClass('Humanoid'))  and (Value.Character:FindFirstChild(GetProperty('SilentBody'))) then
 
-                      local worldPoint = Value.Character[GetProperty('SilentBody')].Position;
+                      local worldPoint = Value.Character:FindFirstChild(GetProperty('SilentBody')).Position;
                       local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
 
                       if (not onScreen) then 
@@ -2738,8 +2738,6 @@ elseif (PlaceId == 142823291) then
                       end;
                 end;
             end;
-
-            return nil;
         end;
 
         OldNameCall = hookmetamethod(game, '__namecall', newcclosure(function(self, ...)
