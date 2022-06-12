@@ -10,7 +10,10 @@ local LocalizationService = game:GetService("LocalizationService")
         Infinite Yield Creators: cfly
         Kiriot22: ESP lib (i still suck at math :cry:)
         Averiias, Stefanuk12, xaxa: Help with silent aim (by help i mean i kinda just learned off of their universal silent aim because i was too lazy to learn it and its like 4 am rn im sorry)
+        Quenty: maid module
+        xenny#0001 (everything else)
 
+        if you find anything that you made that you want credit for that i mightve used without crediting you, just dm me on discord (sometimes i forget or dont know the original creator sorry)
 ]]
 
 local Start = os.time();
@@ -21,7 +24,7 @@ repeat task.wait() until (game ~= nil) and (game:IsLoaded()) and (game.Players ~
 
 -- // Service Function (QOL)
 
-local function Service(Service: string)
+local function Service(Service)
     return game:GetService(Service) or game[Service];
 end;
 
@@ -368,7 +371,7 @@ local function LoadUniversal()
 
     local CircleSettings = Main:AddLeftGroupbox('Circle Settings');
     local HitboxExpander = Main:AddRightGroupbox('Hitbox Expander');
-    local TabHolder = Visuals:AddLeftTabbox('ESP');
+    TabHolder = Visuals:AddLeftTabbox('ESP');
     local ESP = TabHolder:AddTab('ESP');
     local Chams = TabHolder:AddTab('Chams');
 
@@ -768,7 +771,7 @@ local function LoadUniversal()
         Text = 'Third Person Distance';
         Min = 0;
         Max = 200;
-        Default = Player.CameraMaxZoomDistance;
+        Default = 200;
         Rounding = 3;
     });
 
@@ -1467,6 +1470,8 @@ if (PlaceId == 301549746) then -- // Counter blox
             end;
         end;
 
+        
+
     -- // Gun Mods
 
     local InfiniteAmmo = GunMods:AddToggle('InfAmmo', {
@@ -1504,26 +1509,6 @@ if (PlaceId == 301549746) then -- // Counter blox
             RestoreWeaponVal('Spread', true);
         end;
     end)
-
-    local InstantReload = GunMods:AddToggle('InstantReload', {
-        Text = 'Instant Reload';
-    }):OnChanged(function()
-        if (IsEnabled('InstantReload')) then 
-            ChangeWeaponVal('ReloadTime', 0.001);
-        else
-            RestoreWeaponVal('ReloadTime');
-        end;
-    end);
-
-    local InfiniteRange = GunMods:AddToggle('InfRange', {
-        Text = 'Infinite Range';
-    }):OnChanged(function()
-        if (IsEnabled('InfRange')) then 
-            ChangeWeaponVal('Range', 99999999999999);
-        else
-            RestoreWeaponVal('Range');
-        end;
-    end);
 
     local InfinitePen = GunMods:AddToggle('InfPen', {
         Text = 'Infinite Penetration';
@@ -1883,6 +1868,11 @@ elseif (PlaceId == 142823291) then
     local Weapons = ReplicatedStorage:WaitForChild('Weapons', 9e9);
     local StepModules = Client:WaitForChild('StepModules', 9e9);
 
+    local MeleesPath = ReplicatedStorage:WaitForChild('Melees', 9e9);
+    local MeleeValue = Player:WaitForChild('Data'):WaitForChild('Melee');
+
+    local Melees = {};
+
     local Debris = workspace:WaitForChild('Debris');
     
     local GameFuncs = Misc:AddLeftGroupbox('Game Functions');
@@ -1900,6 +1890,8 @@ elseif (PlaceId == 142823291) then
     local GunMods = TabH:AddTab('Gun Mods');
 
     local KillAura = TabH:AddTab('Kill Aura');
+    local SkinChanger = Misc:AddRightGroupbox('Skin Changer');
+    local Viewmodel = TabHolder:AddTab('Viewmodel');
 
     for Index, Value in next, Weapons:GetDescendants() do 
         if (Value:IsA('IntValue')) or (Value:IsA('BoolValue')) then 
@@ -1915,6 +1907,20 @@ elseif (PlaceId == 142823291) then
                 __:Disable();
             end;
         end;
+    end;
+
+    for Index, Value in next, Player:WaitForChild('Data'):GetDescendants() do 
+        if (Value:IsA('IntValue')) or (Value:IsA('BoolValue')) or (Value:IsA('NumberValue')) then 
+            for _, __ in next, getconnections(Value.Changed) do 
+                __:Disable();
+            end;
+        end;    
+    end;
+
+    ClientEnv.UnforseenConsequences = function() end;
+
+    for Index, Value in next, MeleesPath:GetChildren() do 
+        Melees[Value.Name] = Value.Name;
     end;
 
         -- // Change Weapon Value Function
@@ -1996,26 +2002,6 @@ elseif (PlaceId == 142823291) then
                 ChangeWeaponVal('Auto', true);
             else
                 RestoreWeaponVal('Auto');
-            end;
-        end);
-
-        local InstantReload = GunMods:AddToggle('InstantReload', {
-            Text = 'Instant Reload';
-        }):OnChanged(function()
-            if (IsEnabled('InstantReload')) then 
-                ChangeWeaponVal('ReloadTime', 0.02);
-            else
-                RestoreWeaponVal('ReloadTime');
-            end;
-        end);
-
-        local InfRange = GunMods:AddToggle('InfRange', {
-            Text = 'Infinite Range';
-        }):OnChanged(function()
-            if (IsEnabled('InfRange')) then
-                ChangeWeaponVal('Range', 99999999);
-            else
-                RestoreWeaponVal('Range');
             end;
         end);
 
@@ -2149,7 +2135,7 @@ elseif (PlaceId == 142823291) then
             Text = 'Arms Transparency';
             Min = 0;
             Max = 1;
-            Default = 0;
+            Default = 0.7;
             Rounding = 3;
         });
 
@@ -2286,10 +2272,59 @@ elseif (PlaceId == 142823291) then
             Values = {'Head'; 'HumanoidRootPart'};
             Defualt = 1;
         });
+ 
+        SkinChanger:AddToggle('SkinChange', {
+            Text = 'Toggle';
+        });
+
+        SkinChanger:AddDropdown('CustomMelee', {
+            Text = 'Melee';
+            Values = Melees;
+            AllowNull = true;
+        });
+
+        SkinChanger:AddButton('Apply Melee', function()
+            if (IsEnabled('SkinChange')) and (GetProperty('CustomMelee') ~= nil) then 
+                MeleeValue.Value = GetProperty('CustomMelee');
+            end;
+        end);
+
+        Viewmodel:AddToggle('CustomView', {
+            Text = 'Custom Viewmodel';
+        });
+
+        Viewmodel:AddSlider('ViewmodelX', {
+            Text = 'X';
+            Min = -25;
+            Max = 25;
+            Default = 15;
+            Rounding = 3;
+        });
+
+        Viewmodel:AddSlider('ViewmodelY', {
+            Text = 'Y';
+            Min = -25;
+            Max = 25;
+            Default = 15;
+            Rounding = 3;
+        });
+
+        Viewmodel:AddSlider('ViewmodelZ', {
+            Text = 'Z';
+            Min = -25;
+            Max = 25;
+            Default = 15;
+            Rounding = 3;
+        });
+
+        local VelocityOverride = Exploits:AddToggle('VelocityOverride', {
+            Text = 'Velocity Override';
+        });
 
         -- // Hook stuff
 
-        local Old;
+        local Old, Old2;
+
         Old = hookfunction(require(StepModules:WaitForChild('GunMechanics')).work, function(...)
 
             if (IsEnabled('NoHeat')) then 
@@ -2298,6 +2333,17 @@ elseif (PlaceId == 142823291) then
 
             return Old(...);
         end);
+
+        Old2 = require(Functions.General).applyvelocity
+
+        Old2 = function(...)
+
+            if (IsEnabled('VelocityOverride')) then 
+                return;
+            end;
+
+            return Old2(...);
+        end;
 
         local function getPositionOnScreen(Vector)
             local Vec3, OnScreen = Camera.WorldToScreen(Camera, Vector)
@@ -2487,13 +2533,24 @@ elseif (PlaceId == 142823291) then
                 end;
             end;
 
-            if (IsEnabled('CustomArms')) or (IsEnabled('CustomGun')) and (Camera:FindFirstChild('Arms')) and (Camera:FindFirstChild('Arms'):FindFirstChild('CSSArms')) and (Camera ~= nil) then 
+            if (IsEnabled('CustomArms')) or (IsEnabled('CustomGun')) or (IsEnabled('CustomView')) and (Camera:FindFirstChild('Arms')) and (Camera:FindFirstChild('Arms'):FindFirstChild('CSSArms')) and (Camera ~= nil) then 
+
+                if (IsEnabled('CustomView')) and (Camera:FindFirstChild('Arms')) and (Camera:FindFirstChild('Arms'):FindFirstChild('Offset')) then 
+                    Camera:FindFirstChild('Arms'):FindFirstChild('Offset').Value = Vector3.new(GetProperty('ViewmodelX'), GetProperty('ViewmodelY'), GetProperty('ViewmodelZ'));
+                end;
+
                 if (IsEnabled('CustomArms')) then 
                     for Index, Value in next, Camera:FindFirstChild('Arms'):FindFirstChild('CSSArms'):GetChildren() do 
                         if (Value:IsA('Part')) then 
                             Value.Color = GetProperty('ArmColor');
                             Value.Material = GetProperty('ArmMaterial');
                             Value.Transparency = GetProperty('ArmTrans');
+
+                            for _, __ in next, Value:GetChildren() do 
+                                if (string.find(__.Name:lower(), 'sleeve')) then 
+                                    __:Destroy();
+                                end;
+                            end;
                         end;
                     end;
                 end;
@@ -2524,15 +2581,8 @@ elseif (PlaceId == 142823291) then
                     end;
                 end;
             end;
-
-            if (IsEnabled('KillAura')) then
-                for Index, Value in next, Players:GetPlayers() do 
-                    if (Value ~= Player) and (Value.Character ~= nil) and (Value.Team ~= nil) and (Value.Team ~= Player.Team) and (Value.Character:FindFirstChild('HeadHB')) and (Player:DistanceFromCharacter(Value.Character:FindFirstChild('HeadHB').Position) <= GetProperty('KillAuraDistance')) then 
-                        Stab(Value.Character[GetProperty('KillAuraPart')]);
-                    end;
-                end;
-            end;
-        end);
+      end);
+        
 
 else -- // Universal
 
