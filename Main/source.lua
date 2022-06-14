@@ -235,6 +235,28 @@ local function GetProperty(Index)
     return Options[Index].Value;
 end;
 
+-- // Replcaement for table.find because the original is so fucking dogshit
+
+setreadonly(table, false);
+
+table.find = function(Table, Index)
+    assert(Table, '[1] Table cannot be nil!');
+    assert(Index, '[2] Index cannot be nil!');
+    assert(type(Table) == 'table', 'Table must be a table!');
+    
+    for _, __ in next, Table do 
+        if (__ == Index) then 
+            return __;
+        end;
+
+        if (_ == Index) then 
+            return _;
+        end;
+    end;
+    
+    return nil;
+end;
+
 -- // Check if a key is being held via the library toggled property (QOL)
 
 local function IsKeyDown(Index)
@@ -1090,7 +1112,7 @@ local function LoadUniversal()
         end;
 
         TargetPlayer = Players:FindFirstChild(GetProperty('PlrTarget')) or 'nil';
-        TargetTeam =  type(TargetPlayer.Team.Name) == 'string' and TargetPlayer.Team.Name or 'Unknown';
+        TargetTeam =  TargetPlayer.Team ~= nil and type(TargetPlayer.Team.Name) == 'string' and TargetPlayer.Team.Name or 'None';
         StudsAway = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(TargetPlayer.Character:FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
         CurrentHealth = TargetPlayer ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid') and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health or 0;
         CurrentTool = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Tool') and TargetPlayer.Character:FindFirstChildOfClass('Tool').Name or 'None';
@@ -1150,7 +1172,7 @@ local function LoadUniversal()
 
                 -- // Aimbot whitelist check
 
-                if (AimbotWhitelist[Player.Name] ~= nil) then 
+                if (table.find(Options.Whitelist.Value, Player.Name) ~= nil) then 
                     continue;
                 end;
 
@@ -1292,7 +1314,13 @@ local function LoadUniversal()
     end);
 
     Players.PlayerAdded:Connect(function(Player)
-        Options.PlrTarget:SetValues(FetchPlayers());    
+        table.insert(Options.PlrTarget.Values, Player.Name);
+        table.insert(Options.Whitelist.Values, Player.Name);
+        table.insert(Options.HitboxWhitelist.Values, Player.Name);
+
+        Options.PlrTarget:SetValues();
+        Options.Whitelist:SetValues();
+        Options.HitboxWhitelist:SetValues();
 
         Player.CharacterAdded:Connect(function(Character)
             if (IsEnabled('Highlight')) then 
@@ -1315,6 +1343,15 @@ local function LoadUniversal()
     end);
 
     Players.PlayerRemoving:Connect(function(Player)
+
+        table.remove(Options.PlrTarget.Values, table.find(Options.PlrTarget.Values, Player.Name));
+        table.remove(Options.Whitelist.Values, table.find(Options.Whitelist.Values, Player.Name));
+        table.remove(Options.HitboxWhitelist.Values, table.find(Options.HitboxWhitelist, Player.Name));
+    
+        Options.PlrTarget:SetValues();
+        Options.Whitelist:SetValues();
+        Options.HitboxWhitelist:SetValues();
+
         if (HighlightFolder:FindFirstChild(Player.Name)) then 
             HighlightFolder:FindFirstChild(Player.Name):Destroy();
         end;
@@ -1390,7 +1427,7 @@ local function LoadUniversal()
         Library:SetWatermark(('Xenny-Ware | %s FPS | %s MS | Build %s | %s'):format(math.ceil(FPS), math.ceil(Player:GetNetworkPing()), Version, os.date()));
         -- // Aimbot handler
 
-        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (UserInputService:IsMouseButtonPressed(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
+        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (Input:IsMouseButtonPressed(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
 
 
             -- // Sort through the targets table by distance or health

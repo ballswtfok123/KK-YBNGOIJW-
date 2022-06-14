@@ -200,7 +200,7 @@ local SaveManager = {} do
 
 		section:AddDropdown('SaveManager_ConfigList', { Text = 'Config list', Values = self:RefreshConfigList(), AllowNull = true })
 		section:AddInput('SaveManager_ConfigName',    { Text = 'Config name' })
-
+		
 		section:AddDivider()
 
 		section:AddButton('Create config', function()
@@ -254,6 +254,13 @@ local SaveManager = {} do
 			Options.SaveManager_ConfigList:SetValues()
 			Options.SaveManager_ConfigList:SetValue(nil)
 		end)
+
+		section:AddButton('Delete current auto-load', function()
+			if (isfile(self.Folder .. '/settings/autoload.txt')) then 
+				delfile(self.Folder .. '/settings/autoload.txt');
+				self.Library:Notify('Successfully deleted auto-load config');
+			end;
+		end);
 
 		SaveManager.AutoloadLabel = section:AddLabel('Current autoload config: none', true)
 
