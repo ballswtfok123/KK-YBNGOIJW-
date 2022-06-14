@@ -387,6 +387,9 @@ local function LoadUniversal()
 
     Luas = Settings:AddLeftGroupbox('Luas');
 
+    HighlightFolder = Instance.new('Folder', CoreGui);
+    HighlightFolder.Name = 'ESP';
+
     -- // Define targets and other tables
 
     Targets = {};   
@@ -896,6 +899,127 @@ local function LoadUniversal()
         Rounding = 3;
     });
 
+    local Highlight = Chams:AddToggle('Highlight', {
+        Text = 'Highlight';
+    }):AddColorPicker('OutlineColor', {
+        Text = 'Outline Color';
+        Default = Color3.fromRGB(255, 255, 255);
+    }):AddColorPicker('FillColor', {
+        Text = 'Outline Color';
+        Default = Color3.fromRGB(255, 255, 255);
+    }):OnChanged(function()
+        
+        if (IsEnabled('Highlight')) then 
+            for Index, Value in next, Players:GetPlayers() do
+                if (Value ~= Player) then 
+                
+                    if (IsEnabled('HighTeam')) and (Value.Team == Player.Team) then 
+                        continue;
+                    end;
+
+                    if (Value.Character == nil) or (not Value.Character:FindFirstChild('HumanoidRootPart')) then 
+                        continue;
+                    end;
+
+                    local Highlight = Instance.new('Highlight', HighlightFolder);
+                    Highlight.Name = Value.Name;
+                    Highlight.FillColor = GetProperty('FillColor');
+                    Highlight.OutlineColor = GetProperty('OutlineColor');
+                    Highlight.FillTransparency = GetProperty('FillTrans');
+                    Highlight.OutlineTransparency = GetProperty('OutlineTrans');
+                    Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
+                    Highlight.Adornee = Value.Character;
+                end;
+            end;
+        else
+            HighlightFolder:ClearAllChildren();
+        end;
+
+        if (IsEnabled('Highlight')) then 
+            for Index, Value in next, HighlightFolder:GetChildren() do 
+                Value.FillColor = GetProperty('FillColor');
+                Value.OutlineColor = GetProperty('OutlineColor');
+            end;
+        end;
+    end);
+
+    local FillTransparency = Chams:AddSlider('FillTrans', {
+        Text = 'Fill Transparency';
+        Min = 0;
+        Max = 1;
+        Default = 1;
+        Rounding = 3
+    }):OnChanged(function()
+
+        if (not IsEnabled('Highlight')) then return end;
+
+        for Index, Value in next, HighlightFolder:GetChildren() do 
+            Value.FillTransparency = GetProperty('FillTrans');
+        end;
+    end);
+
+    local OutlineTransparency = Chams:AddSlider('OutlineTrans', {
+        Text = 'Outline Transparency';
+        Min = 0;
+        Max = 1;
+        Default = 1;
+        Rounding = 3
+    }):OnChanged(function()
+
+        if (not IsEnabled('Highlight')) then return end;
+
+        for Index, Value in next, HighlightFolder:GetChildren() do 
+            Value.OutlineTransparency = GetProperty('FillTrans');
+        end;
+    end);
+
+    local DepthMode = Chams:AddDropdown('DepthMode', {
+        Text = 'Depth Mode';
+        Values = {'Occluded'; 'AlwaysOnTop'};
+        Default = 2;
+    }):OnChanged(function()
+        if (IsEnabled('Highlight')) then 
+            for Index, Value in next, HighlightFolder:GetChildren() do 
+                Value.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
+            end;
+        end;
+    end);
+
+    local TeamCheck = Chams:AddToggle('HighTeam', {
+        Text = 'Highlight Team Check';
+    }):OnChanged(function()
+        if (IsEnabled('Highlight')) then 
+            for Index, Value in next, HighlightFolder:GetChildren() do 
+                if (Players:FindFirstChild(Value.Name)) and (Players:FindFirstChild(Value.Name).Team ~= nil) and (Players:FindFirstChild(Value.Name).Team == Player.Team) then 
+                    Value:Destroy();
+                end;
+            end;
+        else
+            for Index, Value in next, Players:GetPlayers() do
+                if (Value ~= Player) then 
+                
+                    if (IsEnabled('HighTeam')) and (Value.Team == Player.Team) then 
+                        continue;
+                    end;
+
+                    if (Value.Character == nil) or (not Value.Character:FindFirstChild('HumanoidRootPart')) then 
+                        continue;
+                    end;
+
+                    local Highlight = Instance.new('Highlight', HighlightFolder);
+                    Highlight.Name = Value.Name;
+                    Highlight.FillColor = GetProperty('FillColor');
+                    Highlight.OutlineColor = GetProperty('OutlineColor');
+                    Highlight.FillTransparency = GetProperty('FillTrans');
+                    Highlight.OutlineTransparency = GetProperty('OutlineTrans');
+                    Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
+                    Highlight.Adornee = Value.Character;
+                end;
+            end;
+        end;
+    end);
+
+
     local DisplayName = PlayerBox:AddLabel('Display Name: ');
     local UserId = PlayerBox:AddLabel('User ID: ')
     local AccountAge = PlayerBox:AddLabel('Account Age: ');
@@ -1117,8 +1241,33 @@ local function LoadUniversal()
         end;
     end);
 
-    Players.PlayerAdded:Connect(function()
+    Players.PlayerAdded:Connect(function(Player)
         Options.PlrTarget:SetValues(FetchPlayers());    
+
+        Player.CharacterAdded:Connect(function(Character)
+            if (IsEnabled('Highlight')) then 
+
+                if (not HighlightFolder:FindFirstChild(Player.Name)) then 
+                    local Highlight = Instance.new('Highlight', HighlightFolder);
+                    Highlight.Name = Player.Name;
+                    Highlight.FillColor = GetProperty('FillColor');
+                    Highlight.OutlineColor = GetProperty('OutlineColor');
+                    Highlight.FillTransparency = GetProperty('FillTrans');
+                    Highlight.OutlineTransparency = GetProperty('OutlineTrans');
+                    Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
+                    Highlight.Adornee = Character;
+
+                else
+                    HighlightFolder:FindFirstChild(Value.Name).Adornee = Character
+                end;
+            end;
+        end);
+    end);
+
+    Players.PlayerRemoving:Connect(function(Player)
+        if (HighlightFolder:FindFirstChild(Player.Name)) then 
+            HighlightFolder:FindFirstChild(Player.Name):Destroy();
+        end;
     end);
 
     -- // Index hook
@@ -1376,6 +1525,24 @@ local function LoadUniversal()
                         Value.Material = GetProperty('SelfChamsMaterial');
                         Value.Color = GetProperty('SelfChamsColor');
                     end;    
+                end;
+            end;
+
+            if (IsEnabled('Highlight')) and (HighlightFolder ~= nil) then 
+                for Index, Value in next, HighlightFolder:GetChildren() do
+                    
+                    if (not Value.ClassName == 'Highlight') or (not Players:FindFirstChild(Value.Name)) then continue end;
+
+                    if (IsEnabled('HighTeam')) and (Players:FindFirstChild(Value.Name).Team == Player.Team) then 
+                        HighlightFolder:FindFirstChild(Value.Name):Destroy();
+                        continue;
+                    end;
+
+                    Value.FillColor = GetProperty('FillColor');
+                    Value.OutlineColor = GetProperty('OutlineColor');
+                    Value.FillTransparency = GetProperty('FillTrans');
+                    Value.OutlineTransparency = GetProperty('OutlineTrans');
+                    Value.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
                 end;
             end;
 
@@ -1895,7 +2062,7 @@ elseif (PlaceId == 142823291) then
     local Viewmodel = TabHolder:AddTab('Viewmodel');
 
     for Index, Value in next, Weapons:GetDescendants() do 
-        if (Value:IsA('IntValue')) or (Value:IsA('BoolValue')) then 
+        if (Value:IsA('IntValue')) or (Value:IsA('BoolValue')) or (Value:IsA('NuberValue')) then 
             for _, __ in next, getconnections(Value.Changed) do 
                 __:Disable();
             end;
@@ -2322,7 +2489,7 @@ elseif (PlaceId == 142823291) then
             Text = 'Velocity Override';
         });
 
-        local KillAll = GameFunctions:AddToggle('KillAll', {
+        local KillAll = GameFuncs:AddToggle('KillAll', {
             Text = 'Kill All';
         });
 
@@ -2559,7 +2726,7 @@ elseif (PlaceId == 142823291) then
                     end;
                 end;
 
-                if (IsEnabled('CustomGun')) then 
+                if (IsEnabled('CustomGun')) and (Camera:FindFirstChild('Arms')) then 
                     for Index, Value in next, Camera:FindFirstChild('Arms'):GetChildren() do 
                         if (Value:IsA('Part')) or (Value:IsA('MeshPart')) then 
                             Value.Color = GetProperty('GunColor');
@@ -2587,7 +2754,7 @@ elseif (PlaceId == 142823291) then
             end;
       end);
         
-    elseif (true) or (PlaceID == 2000064164) then -- // State of anarchy
+    elseif (PlaceID == 2000064164) then -- // State of anarchy
         
         Create('State of Anarchy');
         LoadUniversal();
@@ -2774,14 +2941,6 @@ elseif (PlaceId == 142823291) then
 
             if (IsEnabled('LoopKill')) and (TargetPlayer ~= nil) and (TargetPlayer.Character ~= nil) and (TargetPlayer.Character:FindFirstChild('Head')) then 
                 Hit(TargetPlayer);
-            end;
-
-            if (IsEnabled('KillAll')) then 
-                for Index, Value in next, Players:GetPlayers() do 
-                    if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('Head')) then 
-                        Hit(Value);
-                    end;
-                end;
             end;
         end);
 
