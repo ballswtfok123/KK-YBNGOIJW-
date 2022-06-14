@@ -97,6 +97,7 @@ if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then
     writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/theme_manager.lua'));
 end;
 
+local Version, UpdateDate = game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/version.lua');
 
 -- // Declare Library
 
@@ -145,8 +146,6 @@ local RootPart = Character:WaitForChild('HumanoidRootPart', 9e9);
 
 
 -- // Check if UI is already loaded
-
-
 
 if (CoreGui:FindFirstChild('ScreenGui')) and (shared.__XennyWare ~= nil) then 
     CoreGui:FindFirstChild('ScreenGui'):Destroy();
@@ -207,7 +206,7 @@ end;
 -- // Function for checking if certain ui features are enabled (QOL)
 
 local function IsEnabled(Index)
-    return Toggles[Index].Value;
+    return Toggles[Index].Value
 end;
 
 -- // Returns property of index from options table (QOL)
@@ -394,7 +393,7 @@ local function LoadUniversal()
 
     Targets = {};   
     local Original = {};
-    local WhitelistedClasses = {'Part'; 'MeshPart';};
+    local WhitelistedClasses = {'Part'; 'MeshPart'};
     local ValidParts = {
         "RightLowerArm",
         "RightUpperArm",
@@ -411,6 +410,11 @@ local function LoadUniversal()
         "LeftLowerArm",
         "LeftHand",
         "RightHand",
+        'Right Arm';
+        'Left Arm';
+        'Left Leg';
+        'Right Leg';
+        'Torso';
     };
 
     -- // Declare FOV Circles
@@ -432,6 +436,7 @@ local function LoadUniversal()
     local Aimbot = AimbotBox:AddToggle('AimbotEnabled', {
         Text = 'Toggle';
     });
+
 
     local ShowFOV = AimbotBox:AddToggle('ShowFOV', {
         Text = 'Visualize Field of View';
@@ -455,6 +460,12 @@ local function LoadUniversal()
         AllowNull = true;
         Multi = false;
         Values = {'Distance'; 'Health'; 'Mouse'};
+    });
+
+    local MouseKey = AimbotBox:AddDropdown('MouseButton', {
+        Text = 'Mouse Button';
+        Values = {'MouseButton1'; 'MouseButton2'};
+        Default = 2;
     });
 
     local BodyPart = AimbotBox:AddDropdown('AimbotPart', {
@@ -522,10 +533,16 @@ local function LoadUniversal()
 
     local CustomWalkSpeed = LocalBox:AddToggle('CustomWalkSpeed', {
         Text = 'Custom WalkSpeed';
+    }):AddKeyPicker('CustWS', {
+        Text = 'Custom WalkSpeed';
+        Default = 'NONE';
     });
 
     local CustomJumpPower = LocalBox:AddToggle('CustomJumpPower', {
         Text = 'Custom JumpPower';
+    }):AddKeyPicker('CustJP', {
+        Text = 'Custom JumpPower';
+        Default = 'NONE';
     });
 
     local WalkSpeedAmount = LocalBox:AddSlider('WalkSpeedAmount', {
@@ -558,7 +575,7 @@ local function LoadUniversal()
         Text = 'Fly';
         Default = 'NONE';
     }):OnChanged(function()
-        if (not IsEnabled('Fly')) or (not Options.BindFly.Toggled) and (Character ~= nil) and (RootPart ~= nil) then 
+        if (not IsEnabled('Fly')) and (Character ~= nil) and (RootPart ~= nil)   then 
             RootPart.Anchored = false
         end;
     end);
@@ -747,7 +764,7 @@ local function LoadUniversal()
         Min = 0;
         Max = 1;
         Default = 0.3;
-        Rounding = 0.3;
+        Rounding = 3;
     });
 
     local SelfChamsBrightness = Self:AddSlider('SelfChamsBrightness', {
@@ -917,7 +934,7 @@ local function LoadUniversal()
                         continue;
                     end;
 
-                    if (Value.Character == nil) or (not Value.Character:FindFirstChild('HumanoidRootPart')) then 
+                    if (Value.Character == nil) then 
                         continue;
                     end;
 
@@ -947,7 +964,7 @@ local function LoadUniversal()
         Text = 'Fill Transparency';
         Min = 0;
         Max = 1;
-        Default = 1;
+        Default = 0;
         Rounding = 3
     }):OnChanged(function()
 
@@ -962,7 +979,7 @@ local function LoadUniversal()
         Text = 'Outline Transparency';
         Min = 0;
         Max = 1;
-        Default = 1;
+        Default = 0;
         Rounding = 3
     }):OnChanged(function()
 
@@ -994,7 +1011,7 @@ local function LoadUniversal()
                     Value:Destroy();
                 end;
             end;
-        else
+        elseif (IsEnabled('Highlight')) then 
             for Index, Value in next, Players:GetPlayers() do
                 if (Value ~= Player) then 
                 
@@ -1051,17 +1068,20 @@ local function LoadUniversal()
         end;
 
         TargetPlayer = Players:FindFirstChild(GetProperty('PlrTarget')) or 'nil';
-        TargetTeam = TargetPlayer.Team ~= nil and TargetPlayer.Team ~= '' and TargetPlayer.Team or 'Not Found';
+        TargetTeam =  type(TargetPlayer.Team.Name) == 'string' and TargetPlayer.Team.Name or 'Unknown';
         StudsAway = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(TargetPlayer.Character:FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
         CurrentHealth = TargetPlayer ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid') and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health or 0;
         CurrentTool = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Tool') and TargetPlayer.Character:FindFirstChildOfClass('Tool').Name or 'None';
 
+        HealthColor = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 75 and Color3.fromRGB(0, 255, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health <= 75 and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 35 and Color3.fromRGB(255, 127, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health < 34 and Color3.fromRGB(255, 0, 0);
+        TeamColor = TargetPlayer.Team ~= nil and TargetPlayer.Team.Name ~= nil and TargetPlayer.Team.TeamColor ~= nil and TargetPlayer.Team.TeamColor or Color3.fromRGB(255, 255, 255);
+
         DisplayName:SetText('Display Name: ' .. TargetPlayer.DisplayName);
         UserId:SetText('User ID: ' .. TargetPlayer.UserId);
         AccountAge:SetText('Account Age: ' .. TargetPlayer.AccountAge);
-        PlrTeam:SetText('Team: ' .. TargetTeam);
+        PlrTeam:SetText(('Team: ' .. '<font color="rgb(%s,%s,%s)">%s</font>'):format(math.floor(TeamColor.r * 255), math.floor(TeamColor.g * 255), math.floor(TeamColor.b * 255), TargetTeam));
         Studs:SetText('Studs Away: ' .. StudsAway);
-        TargetHealth:SetText('Health: ' .. CurrentHealth);
+        TargetHealth:SetText(('Health: ' .. '<font color="rgb(%s,%s,%s)">%s</font>'):format(math.floor(HealthColor.R * 255), math.floor(HealthColor.G * 255), math.floor(HealthColor.B * 255), CurrentHealth));
         HeldTool:SetText('Held Tool: ' .. CurrentTool);
     end);
 
@@ -1276,10 +1296,10 @@ local function LoadUniversal()
     local oldNewIndex  = mt.__newindex;
     setreadonly(mt, false);
     mt.__newindex = newcclosure(function(t, idx, val)
-        if idx == "WalkSpeed" and not checkcaller() and (IsEnabled('CustomWalkSpeed')) then
+        if idx == "WalkSpeed" and not checkcaller() and (IsEnabled('CustomWalkSpeed')) or idx == "WalkSpeed" and not checkcaller()  and (IsKeyDown('CustWS')) then
             return oldNewIndex(t, idx, GetProperty('WalkSpeedAmount'));
         end;
-        if idx == "JumpPower" and not checkcaller() and IsEnabled('CustomJumpPower') then
+        if idx == "JumpPower" and not checkcaller() and IsEnabled('CustomJumpPower') or idx == "JumpPower" and not checkcaller() and (IsKeyDown('CustJP')) then
             return oldNewIndex(t, idx, IsEnabled('CustomJumpPower'));
         end;
         if (idx == 'CameraMode' and not checkcaller() and IsEnabled('ThirdPerson')) then
@@ -1302,21 +1322,21 @@ local function LoadUniversal()
         local Method = getnamecallmethod();
         local Args = { ... };
 
-        --[[
+        
         if (Method:lower() == 'kick') then 
             return false;
         end;
-        ]]
+        
         return OldNmaeCall(self, ...);
     end));
 
-    --[[
+    
     for _, __ in next, getconnections(Player.Idled) do 
         __:Disable();
     end;
-]]
 
-   RunService.RenderStepped:Connect(function()
+
+   RunService.RenderStepped:Connect(function(Time)
          
         -- // Call Main Functions
 
@@ -1333,9 +1353,13 @@ local function LoadUniversal()
         AimbotFOVCircle.NumSides = GetProperty('AimbotSides');
         AimbotFOVCircle.Thickness = GetProperty('AimbotThickness');
 
+        -- // Watermark handler
+
+        FPS = 1 / Time
+        Library:SetWatermark(('Xenny-Ware | %s FPS | % MS | Build %s | %s'):format(FPS, Player:GetNetworkPing(), Version, os.date()));
         -- // Aimbot handler
 
-        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (Input:IsMouseButtonPressed(1)) and (#Targets > 0) and (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
+        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (UserInputService:IsKeyDown(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
 
 
             -- // Sort through the targets table by distance or health
@@ -1375,6 +1399,10 @@ local function LoadUniversal()
                 end;
 
             end;
+        end;
+
+        if (Options.BindFly.Toggled == false) then 
+            RootPart.Anchored = false;
         end;
 
         if (IsEnabled('ChamsEnable')) then 
@@ -1921,7 +1949,7 @@ elseif (PlaceId == 142823291) then
 
       local function GetSilentAimTarget()
         for Index, Value in next, Players:GetPlayers() do 
-            if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) and (Value.Character:FindFirstChildOfClass('Humanoid')) and (Player:DistanceFromCharacter(Value.Character:FindFirstChild('HumanoidRootPart').Position) <= 300) then
+            if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) and (Value.Character:FindFirstChildOfClass('Humanoid')) and (Player:DistanceFromCharacter(Value.Character:FindFirstChild('HumanoidRootPart').Position) <= 300) and (Value:FindFirstChild(GetProperty('SilentBodyPart'))) then
                   
                   if (IsEnabled('SilentFriends')) and (Player:IsFriendsWith(Value.UserId)) then 
                       continue;
@@ -2018,6 +2046,8 @@ elseif (PlaceId == 142823291) then
       end);
 
     elseif (PlaceId == 286090429) then -- // Arsenal 
+
+
     Create('Arsenal', true);
     LoadUniversal();
     
@@ -2541,8 +2571,6 @@ elseif (PlaceId == 142823291) then
                       end;
                 end;
             end;
-
-            return nil;
         end;
 
         local function getDirection(Origin, Position)
