@@ -78,27 +78,27 @@ end;
 -- // Write the required files
 
 if (not isfile('Xenny-Ware/Required/Library.lua')) then 
-    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/Library.lua'));
+    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/library.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/SaveManager.lua')) then 
-    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/ModifiedSaveManager.lua'));
+    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/modified_save_manager.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/Maid.lua')) then
-    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/Maid.lua'));
+    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/maid.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ESP.lua')) then 
-    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/ESP.lua'));
+    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('hhttps://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/esp.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then 
-    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/theme_manager.lua'));
+    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/theme_manager.lua'));
 end;
 
-local Version, UpdateDate = game:HttpGet('https://raw.githubusercontent.com/xennyy/Scripts/main/version.lua');
-
+local Version, UpdateDate = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/version.lua'))() or 'Unknown', 'Unknown';
+local Creits = loadstring(game:HttpGet())
 -- // Declare Library
 
 local Library = loadfile('Xenny-Ware/Required/Library.lua')(); -- // Credits to inori
@@ -201,6 +201,25 @@ local function GetFunction(Args, Part)
     else
         return Part:GetDescendants();
     end;
+end;
+
+-- // Function for calculating actual account age
+
+local function CalculateAccountAge(Age)
+
+    local Years = 0;
+    local Days = Age;
+    local Months = 0;
+
+    if (Age >= 365) then 
+        repeat task.wait() Days -= 365 Years += 1 until Days < 365
+    end;
+
+    if (Days >= 30) then 
+        repeat task.wait() Days -= 30 Months += 1 until Days < 30;
+    end;
+
+    return Years .. 'y ' .. Months .. 'm ' .. Days .. 'd';
 end;
 
 -- // Function for checking if certain ui features are enabled (QOL)
@@ -388,6 +407,8 @@ local function LoadUniversal()
 
     HighlightFolder = Instance.new('Folder', CoreGui);
     HighlightFolder.Name = 'ESP';
+
+    Credits = Settings:AddRightGroupbox('Credits');
 
     -- // Define targets and other tables
 
@@ -1076,9 +1097,10 @@ local function LoadUniversal()
         HealthColor = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 75 and Color3.fromRGB(0, 255, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health <= 75 and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 35 and Color3.fromRGB(255, 127, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health < 34 and Color3.fromRGB(255, 0, 0);
         TeamColor = TargetPlayer.Team ~= nil and TargetPlayer.Team.Name ~= nil and TargetPlayer.Team.TeamColor ~= nil and TargetPlayer.Team.TeamColor or Color3.fromRGB(255, 255, 255);
 
+        
         DisplayName:SetText('Display Name: ' .. TargetPlayer.DisplayName);
         UserId:SetText('User ID: ' .. TargetPlayer.UserId);
-        AccountAge:SetText('Account Age: ' .. TargetPlayer.AccountAge);
+        AccountAge:SetText('Account Age: ' .. CalculateAccountAge(TargetPlayer.AccountAge));
         PlrTeam:SetText(('Team: ' .. '<font color="rgb(%s,%s,%s)">%s</font>'):format(math.floor(TeamColor.r * 255), math.floor(TeamColor.g * 255), math.floor(TeamColor.b * 255), TargetTeam));
         Studs:SetText('Studs Away: ' .. StudsAway);
         TargetHealth:SetText(('Health: ' .. '<font color="rgb(%s,%s,%s)">%s</font>'):format(math.floor(HealthColor.R * 255), math.floor(HealthColor.G * 255), math.floor(HealthColor.B * 255), CurrentHealth));
@@ -1102,6 +1124,7 @@ local function LoadUniversal()
             setclipboard(Players:FindFirstChild(GetProperty('PlrTarget')).UserId);
         end;
     end);
+
 
     -- // Grab the aimbot target via a function
 
@@ -1355,11 +1378,12 @@ local function LoadUniversal()
 
         -- // Watermark handler
 
+
         FPS = 1 / Time
-        Library:SetWatermark(('Xenny-Ware | %s FPS | % MS | Build %s | %s'):format(FPS, Player:GetNetworkPing(), Version, os.date()));
+        Library:SetWatermark(('Xenny-Ware | %s FPS | %s MS | Build %s | %s'):format(math.ceil(FPS), math.ceil(Player:GetNetworkPing()), Version, os.date()));
         -- // Aimbot handler
 
-        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (UserInputService:IsKeyDown(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
+        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (UserInputService:IsMouseButtonPressed(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
 
 
             -- // Sort through the targets table by distance or health
@@ -1466,7 +1490,6 @@ local function LoadUniversal()
             
                                     -- // Checks 
             
-                                    table.foreach(HitboxChecks.Value, print);
             
                                     if (HitboxChecks.Value['Team'] ~= nil) and (Player.Team == Value.Team) then 
                                         continue;
@@ -1955,7 +1978,6 @@ elseif (PlaceId == 142823291) then
                       continue;
                   end;
 
-                  print(Value.Name);
                   
                   local worldPoint = Value.Character:FindFirstChild(GetProperty('SilentBodyPart')).Position;
                   local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
@@ -2928,7 +2950,6 @@ elseif (PlaceId == 142823291) then
                       local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
     
                       if (magnitude <= GetProperty('SilentFOV')) and (Value.Character ~= nil) and (onScreen) then 
-                        print(Value.Name);
                           return Value.Character[GetProperty('SilentBody')];
                       end;
                 end;
@@ -2947,7 +2968,6 @@ elseif (PlaceId == 142823291) then
 
                 Args[1] = GetProperty('SilentBody');
                 Args[4] = Players:FindFirstChild(GetSilentAimTarget().Parent.Name);
-                print'hooked';
                 if (Args[7] ~= nil) and (type(Args[7] == 'table')) and (Args[7][2] ~= nil) and (Args[7][6] ~= nil) then 
                     Args[7][2] = GetSilentAimTarget();
                     Args[7][6] = Players:FindFirstChild(GetSilentAimTarget().Parent.Name);
@@ -2978,7 +2998,8 @@ else -- // Universal
     LoadUniversal();
 end;
 
-    Library:Notify('Xenny-Ware | Created by xenny#0001 (642209011994722304) | https://youtube.com/c/xenny | enjoy!');
-    Library:Notify('Successfully Loaded in: ' .. os.time() - Start .. '.');
+Library:Notify('Xenny-Ware | Created by xenny#0001 (642209011994722304) | https://youtube.com/c/xenny | enjoy!');
+Library:Notify('Successfully Loaded in: ' .. os.time() - Start .. '.');
 
 Start = nil -- // :3
+Library:SetWatermarkVisibility(true);
