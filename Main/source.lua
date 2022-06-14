@@ -98,7 +98,8 @@ if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then
 end;
 
 local Version, UpdateDate = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/version.lua'))() or 'Unknown', 'Unknown';
-local Creits = loadstring(game:HttpGet())
+local Credits = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/credits.lua'))();
+
 -- // Declare Library
 
 local Library = loadfile('Xenny-Ware/Required/Library.lua')(); -- // Credits to inori
@@ -408,7 +409,7 @@ local function LoadUniversal()
     HighlightFolder = Instance.new('Folder', CoreGui);
     HighlightFolder.Name = 'ESP';
 
-    Credits = Settings:AddRightGroupbox('Credits');
+    CreditsSection = Settings:AddRightGroupbox('Credits');
 
     -- // Define targets and other tables
 
@@ -1125,6 +1126,12 @@ local function LoadUniversal()
         end;
     end);
 
+
+    -- // Add credits
+
+    for Index, Value in next, Credits do 
+        CreditsSection:AddLabel(Index .. ': ' .. Value);
+    end;
 
     -- // Grab the aimbot target via a function
 
