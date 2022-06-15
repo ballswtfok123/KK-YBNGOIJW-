@@ -81,7 +81,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Save(name)
-		local fullPath = self.Folder .. '/settings/' ..  game.PlaceId .. '/' .. name .. '.json'
+		local fullPath = self.Folder .. '/Settings/' ..  game.PlaceId .. '/' .. name .. '.json'
 
 		local data = {
 			objects = {}
@@ -110,7 +110,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Load(name)
-		local file = self.Folder .. '/settings/' ..  game.PlaceId .. '/'  .. name .. '.json'
+		local file = self.Folder .. '/Settings/' ..  game.PlaceId .. '/'  .. name .. '.json'
 		if not isfile(file) then return false, 'invalid file' end
 
 		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
@@ -135,9 +135,9 @@ local SaveManager = {} do
 	function SaveManager:BuildFolderTree()
 		local paths = {
 			self.Folder,
-			self.Folder .. '/themes',
-			self.Folder .. '/settings',
-            self.Folder .. '/settings/' .. tostring(game.PlaceId),
+			self.Folder .. '/Themes',
+			self.Folder .. '/Settings',
+            self.Folder .. '/Settings/' .. tostring(game.PlaceId),
 		}
 
 		for i = 1, #paths do
@@ -149,7 +149,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:RefreshConfigList()
-		local list = listfiles(self.Folder .. '/settings/' .. game.PlaceId .. '/')
+		local list = listfiles(self.Folder .. '/Settings/' .. game.PlaceId .. '/')
 
 		local out = {}
 		for i = 1, #list do
@@ -180,8 +180,8 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:LoadAutoloadConfig()
-		if isfile(self.Folder .. '/settings/autoload.txt') then
-			local name = readfile(self.Folder .. '/settings/autoload.txt')
+		if isfile(self.Folder .. '/Settings/autoload.txt') then
+			local name = readfile(self.Folder .. '/Settings/autoload.txt')
 
 			local success, err = self:Load(name)
 			if not success then
@@ -244,7 +244,7 @@ local SaveManager = {} do
 		
 		section:AddButton('Autoload config', function()
 			local name = Options.SaveManager_ConfigList.Value
-			writefile(self.Folder .. '/settings/autoload.txt', name)
+			writefile(self.Folder .. '/Settings/autoload.txt', name)
 			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
 			self.Library:Notify(string.format('Set %q to auto load', name))
 		end)
@@ -256,16 +256,16 @@ local SaveManager = {} do
 		end)
 
 		section:AddButton('Delete current auto-load', function()
-			if (isfile(self.Folder .. '/settings/autoload.txt')) then 
-				delfile(self.Folder .. '/settings/autoload.txt');
+			if (isfile(self.Folder .. '/Settings/autoload.txt')) then 
+				delfile(self.Folder .. '/Settings/autoload.txt');
 				self.Library:Notify('Successfully deleted auto-load config');
 			end;
 		end);
 
 		SaveManager.AutoloadLabel = section:AddLabel('Current autoload config: none', true)
 
-		if isfile(self.Folder .. '/settings/autoload.txt') then
-			local name = readfile(self.Folder .. '/settings/autoload.txt')
+		if isfile(self.Folder .. '/Settings/autoload.txt') then
+			local name = readfile(self.Folder .. '/Settings/autoload.txt')
 			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
 		end
 

@@ -60,7 +60,10 @@ end;
 -- // Needed Folders
 
 local RequiredFiles = {
-    ['Xenny-Ware/Required'] = 'folder'
+    ['Xenny-Ware/Required'] = 'folder';
+    ['Xenny-Ware/Modules'] = 'folder';
+    ['Xenny-Ware/Luas'] = 'folder';
+    ['Xenny-Ware/Debug'] = 'folder';
 };
 
 -- // Create needed folders and files
@@ -78,27 +81,28 @@ end;
 -- // Write the required files
 
 if (not isfile('Xenny-Ware/Required/Library.lua')) then 
-    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/library.lua'));
+    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/library.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/SaveManager.lua')) then 
-    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/modified_save_manager.lua'));
+    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/modified_save_manager.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/Maid.lua')) then
-    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/maid.lua'));
+    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/maid.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ESP.lua')) then 
-    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('hhttps://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/esp.lua'));
+    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/esp.lua'));
 end;
 
 if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then 
-    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://github.com/ballswtfok123/Xenny-Ware/blob/main/Required/theme_manager.lua'));
+    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/theme_manager.lua'));
 end;
 
 local Version, UpdateDate = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/version.lua'))() or 'Unknown', 'Unknown';
 local Credits = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/credits.lua'))();
+
 
 -- // Declare Library
 
@@ -107,6 +111,10 @@ local SaveManager = loadfile('Xenny-Ware/Required/SaveManager.lua')(); -- // Cre
 local ThemeManager = loadfile('Xenny-Ware/Required/ThemeManager.lua')() -- // Credits to wally for this
 local Maid = loadfile('Xenny-Ware/Required/Maid.lua')(); -- // Credit to quenty
 local ESPLib = loadfile('Xenny-Ware/Required/ESP.lua')(); -- // Credit to kiriot22
+
+ESPLib.Enabled = false;
+ESPLib.Names = false;
+ESPLib.Boxes = false;
 
 SaveManager:SetLibrary(Library)
 SaveManager:SetFolder('Xenny-Ware');
@@ -124,6 +132,8 @@ local TweenService = Service('TweenService');
 local Input = Service('UserInputService');
 local RunService = Service('RunService');
 local TeleportService = Service('TeleportService');
+local VIM = Service('VirtualInputManager');
+local GETOUTOOFMYHEAD;
 
 local CoreGui = game.CoreGui;
 local Camera = workspace.CurrentCamera;
@@ -138,6 +148,7 @@ local Mouse = Player:GetMouse();
 local PlaceId = game.PlaceId;
 local JobId = game.JobId;
 
+local Modules = {};
 
 -- // Declare Character & Character Parts
 
@@ -157,12 +168,69 @@ end;
 local Window, Main, Settings, AimbotBox, LocalBox, Visuals, Misc, Debug, OldNmaeCall, PlayerInfo, Luas, TabH, TabB, Rage, OldNameCall, Themes
 
 
+-- // Module Function
+
+local function LoadModule(Module: string)
+
+    if (not isfile(('Xenny-Ware/Modules/%s.lua'):format(Module))) then
+        return 'Error: File does not exist';
+    end;
+
+    local Loaded = loadfile(('Xenny-Ware/Modules/%s.lua'):format(Module))();
+
+    if (Loaded) then -- // If the module loaded successfullly
+        local LoadedModule = Modules[Module];
+
+        Modules[Module] = {}; 
+        Modules[Module].LoadedFile = Loaded;
+        Modules[Module].Loaded = true;
+
+        Modules[Module].Unload = function()
+            Modules[Module].LoadedFile = nil;
+            Modules[Module] = nil;
+        end;
+
+        return Modules[Module].LoadedFile, Modules[Module];
+    end;
+
+    return 'Error loading module';
+end;
+
+local function UnloadModule(Module: string)
+    if (not isfile(('Xenny-Ware/Modules/%s.lua'):format(Module))) then
+        return 'Error: File does not exist';
+    end;
+
+    if (Modules[Module] == nil) then 
+        return 'Module is not loaded';
+    end;
+
+    if (Modules[Module].Unload == nil) or (not type(Modules[Module].Unload) == 'function') then 
+        return 'Module does not exist';
+    end;
+
+    Modules[Modules].Unload();
+
+    return 'Error unloading module.';
+end;
+
+local function CleanupModules()
+    for Index, Value in next, Modules do 
+        if (Value.Loaded ~= nil) and (Value.Loaded == false) then 
+            Value = nil; -- // Remove the module table entirely
+        end;
+    end;
+
+    return 'Successfully cleaned up modules';
+end;
+
 -- // Template function for ease of use
 
 local function Create(Name, LoadRage)
 
+    shared.__XennyWare = {};
 
-    Window = Library:CreateWindow('Xenny-Ware | ' .. Name);
+    Window = Library:CreateWindow('Xenny-Ware | ' .. Name, {AutoShow = true});
     Main = Window:AddTab('Main');
 
     if (LoadRage ~= nil) and (LoadRage == true) then 
@@ -261,6 +329,43 @@ end;
 
 local function IsKeyDown(Index)
     return Options[Index].Toggled;
+end;
+
+-- // Press key function
+
+function PressKey(Key, Hold)
+	VIM:SendKeyEvent(true, Key, Hold, GETOUTOOFMYHEAD);
+end;
+
+-- // Get lua files
+
+local function GetLuaFiles()
+    -- // thanks wally :troll:
+
+    local list = listfiles('Xenny-Ware/Luas/')
+
+		local out = {}
+		for i = 1, #list do
+			local file = list[i]
+			if file:sub(-4) == '.lua' then
+				-- i hate this but it has to be done ...
+
+				local pos = file:find('.lua', 1, true)
+				local start = pos
+
+				local char = file:sub(pos, pos)
+				while char ~= '/' and char ~= '\\' and char ~= '' do
+					pos = pos - 1
+					char = file:sub(pos, pos)
+				end
+
+				if char == '/' or char == '\\' then
+					table.insert(out, file:sub(pos + 1, start - 1))
+				end
+			end
+		end
+
+    return out;
 end;
 
 -- // List character parts
@@ -432,6 +537,13 @@ local function LoadUniversal()
     HighlightFolder.Name = 'ESP';
 
     CreditsSection = Settings:AddRightGroupbox('Credits');
+
+    -- // Auto load lua
+
+    if (isfile('Xenny-Ware/Luas/autoload.LUA')) and (isfile(('Xenny-Ware/Luas/%s.lua'):format(readfile('Xenny-Ware/Luas/autoload.LUA')))) then 
+        loadfile(('Xenny-Ware/Luas/%s.lua'):format(readfile('Xenny-Ware/Luas/autoload.LUA')));
+        Library:Notify('Successfully auto loaded LUA: ' .. readfile('Xenny-Ware/Luas/autoload.LUA'));
+    end;
 
     -- // Define targets and other tables
 
@@ -1154,6 +1266,47 @@ local function LoadUniversal()
     for Index, Value in next, Credits do 
         CreditsSection:AddLabel(Index .. ': ' .. Value);
     end;
+
+    -- // Lua system
+
+    local LuaFiles = Luas:AddDropdown('LuaFile', {
+        Text = 'File';
+        Values = GetLuaFiles();
+        Default = 1;
+    });
+
+    local LoadLua = Luas:AddButton('Load Lua', function()
+        if (isfile(('Xenny-Ware/Luas/%s.lua'):format(GetProperty('LuaFile')))) then 
+            loadfile(('Xenny-Ware/Luas/%s.lua'):format(GetProperty('LuaFile')))();
+            Library:Notify('Successfully loaded lua file: ' .. GetProperty('LuaFile'));
+        else
+            Library:Notify('Error: File does not exist. Try refreshing?');
+        end;
+    end):AddButton('Delete Lua', function()
+        if (isfile(('Xenny-Ware/Luas/%s.lua'):format(GetProperty('LuaFile')))) then 
+            delfile(('Xenny-Ware/Luas/%s.lua'):format(GetProperty('LuaFile')));
+            Library:Notify('Successfully deleted lua: ' .. GetProperty('LuaFile'));
+        else
+            Library:Notify('Error: file does not exist');
+        end;
+    end);
+    
+    Luas:AddButton('Auto Load Lua', function()
+        if (isfile(('Xenny-Ware/Luas/%s.lua'):format(GetProperty('LuaFile')))) then 
+            writefile('Xenny-Ware/Luas/autoload.LUA', GetProperty('LuaFile')); -- // :trol:
+            Library:Notify('Successfully set auto load lua to: ' .. GetProperty('LuaFile'));
+        else
+            Library:Notify('Error: file does not exist');
+        end;
+    end)
+    
+    Luas:AddButton('Delete Auto Load Lua', function()
+        if (isfile('Xenny-Ware/Luas/autoload.LUA')) then 
+            delfile('Xenny-Ware/Luas/autoload.LUA');
+        else
+            Library:Notify('Error: there is no auto loaded lua set');
+        end;
+    end);
 
     -- // Grab the aimbot target via a function
 
@@ -2585,9 +2738,10 @@ elseif (PlaceId == 142823291) then
             Text = 'Velocity Override';
         });
 
-        local KillAll = GameFuncs:AddToggle('KillAll', {
-            Text = 'Kill All';
+        local BHop = GameFuncs:AddToggle('BHop', {
+            Text = 'Bunny Hop';
         });
+
 
         -- // Hook stuff
 
@@ -2645,7 +2799,8 @@ elseif (PlaceId == 142823291) then
         
 
 
-        
+
+
         OldNameCall = hookmetamethod(game, '__namecall', newcclosure(function(self, ...)
             local Args = { ... };
             local Method = getnamecallmethod();
@@ -2774,7 +2929,7 @@ elseif (PlaceId == 142823291) then
                         Clone.Position = Value.Character:FindFirstChild('HeadHB').Position;
                         Clone.Size = Value.Character:FindFirstChild('HeadHB').Size;
                         Clone.Material = 'ForceField';
-                        Clone.Name = 'Backtrack';
+                        Clone.Name = 'HeadHB';
                         Clone.Anchored = true;
                         Clone.CanCollide = false;
 
@@ -2831,7 +2986,7 @@ elseif (PlaceId == 142823291) then
                 end;
             end;
 
-            if (Character ~= nil) then 
+            if (Character ~= nil) and (Humanoid ~= nil) then 
                 for Index, Value in next, Character:GetChildren() do 
                     if (IsEnabled('NoArms')) and (string.find(Value.Name:lower(), 'arm')) then 
                         Value:Destroy();
@@ -2844,6 +2999,10 @@ elseif (PlaceId == 142823291) then
                     if (IsEnabled('NoHead')) and (Value.Name == 'FakeHead') then 
                         Value:Destroy();
                     end;
+                end;
+
+                if (IsEnabled('BHop')) then 
+                    Humanoid.Jump = true;
                 end;
             end;
       end);
