@@ -1,5 +1,7 @@
 -- All credits go to wally, all i did was add multi game support
 
+repeat task.wait() until shared.__XennyWare ~= nil and shared.__XennyWare.Values ~= nil;
+
 local httpService = game:GetService('HttpService')
 
 local SaveManager = {} do
@@ -228,7 +230,9 @@ local SaveManager = {} do
 				return self.Library:Notify('Failed to load config: ' .. err)
 			end
 
-			self.Library:Notify(string.format('Loaded config %q', name))
+			if (not shared.__XennyWare.Values.AutoSave) then 
+				self.Library:Notify(string.format('Loaded config %q', name));
+			end;
 		end)
 
 		section:AddButton('Overwrite config', function()
@@ -260,6 +264,22 @@ local SaveManager = {} do
 				delfile(self.Folder .. '/Settings/autoload.txt');
 				self.Library:Notify('Successfully deleted auto-load config');
 			end;
+		end);
+
+		section:AddToggle('AutoSave', {
+			Text = 'Auto Save Config';
+		}):OnChanged(function()
+			shared.__XennyWare.Values.AutoSave = Toggles.AutoSave.Value;
+		end);
+
+		section:AddSlider('AutoSaveDelay', {
+			Text = 'Save Delay';
+			Min = 0;
+			Max = 15;
+			Default = 5;
+			Rounding = 3;
+		}):OnChanged(function()
+			shared.__XennyWare.Values.AutoSaveDelay = Options.AutoSaveDelay.Value;
 		end);
 
 		SaveManager.AutoloadLabel = section:AddLabel('Current autoload config: none', true)

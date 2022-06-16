@@ -21,13 +21,38 @@ local Start = os.time();
 
 -- // Wait Until The Game Is Loaded
 
-repeat task.wait() until (game ~= nil) and (game:IsLoaded()) and (game.Players ~= nil) and (game.Players.LocalPlayer ~= nil)
+repeat task.wait() until (game ~= nil) and (game:IsLoaded()) and (game.Players ~= nil) and (game.Players.LocalPlayer ~= nil);
 
 -- // Service Function (QOL)
 
 local function Service(Service)
     return game:GetService(Service) or game[Service];
 end;
+
+-- // unload function
+
+local function Unload()
+    CoreGui:FindFirstChild('ScreenGui'):Destroy();
+
+    for Index, Value in next, shared.__XennyWare.Connections do 
+        Value:Disconnect();
+    end;
+
+    ESP.Enabled = false;
+    HighlightFolder:ClearAllChildren();
+
+end;
+
+-- // Check if UI is already loaded
+
+if (game.CoreGui:FindFirstChild('ScreenGui')) and (shared.__XennyWare ~= nil) then 
+    Unload();
+end;
+
+shared.__XennyWare = {};
+shared.__XennyWare.Connections = {};
+shared.__XennyWare.Functions = {};
+shared.__XennyWare.Values = {};
 
 -- // Check for needed functions
 
@@ -41,6 +66,11 @@ local NeededFunctions = {
     getsenv,
     setclipboard,
     getconnections,
+    getgenv,
+    setupvalue;
+    getupvalues;
+    getconstants;
+    firetouchinterest;
 };
 
 
@@ -64,6 +94,7 @@ local RequiredFiles = {
     ['Xenny-Ware/Modules'] = 'folder';
     ['Xenny-Ware/Luas'] = 'folder';
     ['Xenny-Ware/Debug'] = 'folder';
+    ['Xenny-Ware/Extra'] = 'folder';
 };
 
 -- // Create needed folders and files
@@ -103,6 +134,20 @@ end;
 local Version, UpdateDate = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/version.lua'))() or 'Unknown', 'Unknown';
 local Credits = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/credits.lua'))();
 
+if (not isfile('Xenny-Ware/Extra/Version.lua')) then 
+    writefile('Xenny-Ware/Extra/Version.lua', Version);
+end;
+
+-- // Check if a new update has happened
+
+if (readfile('Xenny-Ware/Extra/Version.lua') ~= Version) then 
+    writefile('Xenny-Ware/Required/Library.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/library.lua'));
+    writefile('Xenny-Ware/Required/SaveManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/modified_save_manager.lua'));
+    writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/maid.lua'));
+    writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/esp.lua'));
+    writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/theme_manager.lua'));
+    writefile('Xenny-Ware/Extra/Version.lua', Version);
+end;
 
 -- // Declare Library
 
@@ -157,15 +202,48 @@ local Humanoid = Character:WaitForChild('Humanoid', 9e9);
 local RootPart = Character:WaitForChild('HumanoidRootPart', 9e9);
 
 
--- // Check if UI is already loaded
 
-if (CoreGui:FindFirstChild('ScreenGui')) and (shared.__XennyWare ~= nil) then 
-    CoreGui:FindFirstChild('ScreenGui'):Destroy();
-end;
+local Functions = shared.__XennyWare.Functions; -- // >w<
 
 -- // Declare used variables
 
 local Window, Main, Settings, AimbotBox, LocalBox, Visuals, Misc, Debug, OldNmaeCall, PlayerInfo, Luas, TabH, TabB, Rage, OldNameCall, Themes
+
+-- // Get nearest function
+
+Functions.GetNearest = function()
+    if (Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
+        return;
+    end;
+
+    for Index, Value in next, Players:GetPlayers() do 
+        if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) and (Player:DistanceFromCharacter(Value.Character:FindFirstChild('HumanoidRootPart').Position) <= 40) then 
+            return Value, Value.Character, Value.Character.PrimaryPart, Value.Character.PrimaryPart.Position;
+        end;
+    end; 
+
+    return nil;
+end;
+
+Functions.Chat = function(Message)
+    ReplicatedStorage:WaitForChild('DefaultChatSystemChatEvents'):WaitForChild('SayMessageRequest'):FireServer(Message, 'All');
+end;
+
+Functions.GoTo = function(Position)
+    if (Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
+        return;
+    end;
+    
+    RootPart.Position = Position;
+end;
+
+Functions.CharCheck = function()
+    if (Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
+        return false;
+    end;
+
+    return true;
+end;
 
 
 -- // Module Function
@@ -186,7 +264,6 @@ local function LoadModule(Module: string)
         Modules[Module].Loaded = true;
 
         Modules[Module].Unload = function()
-            Modules[Module].LoadedFile = nil;
             Modules[Module] = nil;
         end;
 
@@ -224,11 +301,14 @@ local function CleanupModules()
     return 'Successfully cleaned up modules';
 end;
 
+Functions.LoadModule = LoadModule;
+Functions.UnloadModule = UnloadModule;
+Functions.CleanupModules = CleanupModules;
+
 -- // Template function for ease of use
 
 local function Create(Name, LoadRage)
 
-    shared.__XennyWare = {};
 
     Window = Library:CreateWindow('Xenny-Ware | ' .. Name, {AutoShow = true});
     Main = Window:AddTab('Main');
@@ -250,6 +330,17 @@ local function Create(Name, LoadRage)
     ThemeManager:LoadDefault();
 
 end;
+
+Functions.LoadConfig = function(Name)
+    SaveManager:Load(Name);
+end;
+
+Functions.SaveConfig = function(Name)
+    SaveManager:Save(Name);
+end;
+
+-- // Init xenny ware functions
+
 
 -- // Tween teleport functions
 
@@ -395,6 +486,11 @@ end;
 -- // Character set up
 
 local function SetUpCharacter(Character)
+
+    if (Functions.OnCharAdded ~= nil) then 
+        Functions.OnCharAdded(Character);
+    end;
+
     Character = Character;
     Humanoid = Character:WaitForChild('Humanoid', 9e9);
     RootPart = Character:WaitForChild('HumanoidRootPart', 9e9);
@@ -509,7 +605,6 @@ end
 
 local function LoadUniversal()
 
-    -- // Declare groupboxes
 
     TabB = Main:AddLeftTabbox();
     AimbotBox = TabB:AddTab('Aimbot');
@@ -537,6 +632,7 @@ local function LoadUniversal()
     HighlightFolder.Name = 'ESP';
 
     CreditsSection = Settings:AddRightGroupbox('Credits');
+    Core = Misc:AddLeftGroupbox('Core');
 
     -- // Auto load lua
 
@@ -750,6 +846,23 @@ local function LoadUniversal()
         Default = 10;
     });
 
+    local AttachToBack = LocalBox:AddToggle('AttachToBack', {
+        Text = 'Attach To Back';
+    });
+
+    local AttachToBackOffset = LocalBox:AddSlider('BackOffset', {
+        Text = 'Offset';
+        Min = -10;
+        Max = 10;
+        Default = 2;
+        Rounding = 3;
+    });
+
+    local AttachMethod = LocalBox:AddDropdown('AttachMethod', {
+        Text = 'Detection Method';
+        Values = {'Mouse'; 'Nearest'};
+    });
+
     local HitboxToggle = HitboxExpander:AddToggle('Hitbox', {
         Text = 'Toggle';
     }):AddColorPicker('HitboxColor', {
@@ -787,7 +900,7 @@ local function LoadUniversal()
     local HitboxSize = HitboxExpander:AddSlider('HitboxSize', {
         Text = 'Hitbox Size';
         Min = 0;
-        Max = 450;
+        Max = 200;
         Default = 1;
         Rounding = 3;
     });
@@ -1102,10 +1215,21 @@ local function LoadUniversal()
                     Highlight.OutlineTransparency = GetProperty('OutlineTrans');
                     Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
                     Highlight.Adornee = Value.Character;
+
+                    shared.__XennyWare.Connections['HighCharAdded_' .. Value.Name] =  Value.CharacterAdded:Connect(function(Character) 
+                        if (HighlightFolder:FindFirstChild(Value.Name)) then  
+                            HighlightFolder:FindFirstChild(Value.Name).Adornee = Character;
+                        end;
+                    end);
                 end;
             end;
         else
             HighlightFolder:ClearAllChildren();
+            for Index, Value in next, shared.__XennyWare.Connections do 
+                if (string.find(Index:lower(), 'highcharadded')) then 
+                    Value:Disconnect();
+                end;
+            end;
         end;
 
         if (IsEnabled('Highlight')) then 
@@ -1226,7 +1350,7 @@ local function LoadUniversal()
         TargetPlayer = Players:FindFirstChild(GetProperty('PlrTarget')) or 'nil';
         TargetTeam =  TargetPlayer.Team ~= nil and type(TargetPlayer.Team.Name) == 'string' and TargetPlayer.Team.Name or 'None';
         StudsAway = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(TargetPlayer.Character:FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
-        CurrentHealth = TargetPlayer ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid') and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health or 0;
+        CurrentHealth = TargetPlayer ~= nil and TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid') and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health or 0;
         CurrentTool = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Tool') and TargetPlayer.Character:FindFirstChildOfClass('Tool').Name or 'None';
 
         HealthColor = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 75 and Color3.fromRGB(0, 255, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health <= 75 and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 35 and Color3.fromRGB(255, 127, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health < 34 and Color3.fromRGB(255, 0, 0);
@@ -1306,6 +1430,11 @@ local function LoadUniversal()
         else
             Library:Notify('Error: there is no auto loaded lua set');
         end;
+    end);
+
+    Core:AddButton('Unload', function()
+        CoreGui:FindFirstChild('ScreenGui'):Destroy();
+        Unload();
     end);
 
     -- // Grab the aimbot target via a function
@@ -1394,6 +1523,8 @@ local function LoadUniversal()
         end;
     end;
 
+    Functions.GetAimbotTarget = GetAimbotTarget;
+
     local Rejoin = Server:AddButton('Rejoin', function()
         TeleportService:Teleport(PlaceId);
     end);
@@ -1432,20 +1563,20 @@ local function LoadUniversal()
 
     -- // Connections
 
-    Input.JumpRequest:Connect(function()
+    shared.__XennyWare.Connections['JumpRequest'] = Input.JumpRequest:Connect(function()
         if (IsEnabled('InfiniteJump')) then 
             Humanoid:ChangeState('Jumping');
         end;
     end);
 
-    Input.InputBegan:Connect(function(Key)
+    shared.__XennyWare.Connections['InputBegan'] = Input.InputBegan:Connect(function(Key)
         if (Key.KeyCode == Enum.KeyCode.LeftAlt) and (IsEnabled('ClickTeleport') and (Character ~= nil) and (RootPart ~= nil) and (Humanoid ~= nil)) then 
             local EndPos = Mouse.Hit
             RootPart.CFrame = EndPos + Vector3.new(0, 3, 0)
         end;
     end);
 
-   workspace.DescendantAdded:Connect(function(Value)
+    shared.__XennyWare.Connections['GraphicsConnection'] = workspace.DescendantAdded:Connect(function(Value)
         if (IsEnabled('LowGraphics')) then 
             if (table.find(WhitelistedClasses, Value.ClassName)) then 
                 Original[Value] = {['ClassName'] = Value.ClassName; ['Material'] = Value.Material; ['Reflectance'] = Value.Reflectance;}; 
@@ -1466,16 +1597,16 @@ local function LoadUniversal()
         end;
     end);
 
-    Players.PlayerAdded:Connect(function(Player)
-        table.insert(Options.PlrTarget.Values, Player.Name);
-        table.insert(Options.Whitelist.Values, Player.Name);
-        table.insert(Options.HitboxWhitelist.Values, Player.Name);
+    shared.__XennyWare.Connections['PlayerAdded'] = Players.PlayerAdded:Connect(function(Player)
+        Options.PlrTarget.Values = FetchPlayers();
+        Options.Whitelist.Values = FetchPlayers();
+        Options.HitboxWhitelist.Values = FetchPlayers();
 
         Options.PlrTarget:SetValues();
         Options.Whitelist:SetValues();
         Options.HitboxWhitelist:SetValues();
 
-        Player.CharacterAdded:Connect(function(Character)
+        shared.__XennyWare.Connections['CharAdded' .. Player.Name] =  Player.CharacterAdded:Connect(function(Character)
             if (IsEnabled('Highlight')) then 
 
                 if (not HighlightFolder:FindFirstChild(Player.Name)) then 
@@ -1487,7 +1618,6 @@ local function LoadUniversal()
                     Highlight.OutlineTransparency = GetProperty('OutlineTrans');
                     Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
                     Highlight.Adornee = Character;
-
                 else
                     HighlightFolder:FindFirstChild(Value.Name).Adornee = Character
                 end;
@@ -1495,15 +1625,23 @@ local function LoadUniversal()
         end);
     end);
 
-    Players.PlayerRemoving:Connect(function(Player)
+    shared.__XennyWare.Connections['PlayerRemoving'] = Players.PlayerRemoving:Connect(function(Player)
 
-        table.remove(Options.PlrTarget.Values, table.find(Options.PlrTarget.Values, Player.Name));
-        table.remove(Options.Whitelist.Values, table.find(Options.Whitelist.Values, Player.Name));
-        table.remove(Options.HitboxWhitelist.Values, table.find(Options.HitboxWhitelist, Player.Name));
-    
+        Options.PlrTarget.Values = FetchPlayers();
+        Options.Whitelist.Values = FetchPlayers();
+        Options.HitboxWhitelist.Values = FetchPlayers();
+
         Options.PlrTarget:SetValues();
         Options.Whitelist:SetValues();
         Options.HitboxWhitelist:SetValues();
+
+        for Index, Value in next, shared.__XennyWare.Connections do 
+            if (string.find(Index:lower(), Player.Name:lower())) then 
+                Value:Disconnect();
+                Value = nil;
+                Index = nil;
+            end;
+        end;
 
         if (HighlightFolder:FindFirstChild(Player.Name)) then 
             HighlightFolder:FindFirstChild(Player.Name):Destroy();
@@ -1556,7 +1694,7 @@ local function LoadUniversal()
     end;
 
 
-   RunService.RenderStepped:Connect(function(Time)
+    shared.__XennyWare.Connections['MainLoop'] = RunService.RenderStepped:Connect(function(Time)
          
         -- // Call Main Functions
 
@@ -1675,6 +1813,13 @@ local function LoadUniversal()
             task.wait(GetProperty('ChatDelay'));
         end;
 
+        -- // Auto save handler
+
+        if (shared.__XennyWare.Values.AutoSave) then 
+            SaveManager:Save(GetProperty('SaveManager_ConfigList'));
+            task.wait(shared.__XennyWare.Values.AutoSaveDelay);
+        end;
+
         -- // Walkspeed and jumppower handler
 
         if (Character ~= nil) then 
@@ -1712,7 +1857,8 @@ local function LoadUniversal()
                                             Part.Color = GetProperty('HitboxColor');
                                             Part.Massless = true;
                                             Part.CanCollide = false;
-            
+                                        
+
                                         end;
                                     end;
                                 end;    
@@ -1739,6 +1885,8 @@ local function LoadUniversal()
                 HRP.CFrame = CFrame.new(HRP.Position, HRP.Position + Camera.CFrame.LookVector) * (UIS:GetFocusedTextBox() and cf or CFrame.new((UIS:IsKeyDown(Keys.D) and SPI) or (UIS:IsKeyDown(Keys.A) and -SPI) or 0, (UIS:IsKeyDown(Keys.E) and SPI / 2) or (UIS:IsKeyDown(Keys.Q) and -SPI / 2) or 0, (UIS:IsKeyDown(Keys.S) and SPI) or (UIS:IsKeyDown(Keys.W) and -SPI) or 0))
             end;
 
+
+           
             -- // Visuals stuff
 
             if (IsEnabled('CustomAmbient')) then 
@@ -1822,7 +1970,7 @@ local function LoadUniversal()
 
 end;
 
-Player.CharacterAdded:Connect(SetUpCharacter);
+shared.__XennyWare.Connections['SetUpPlrChar'] = Player.CharacterAdded:Connect(SetUpCharacter);
 
 if (PlaceId == 301549746) then -- // Counter blox
 
@@ -1994,7 +2142,7 @@ if (PlaceId == 301549746) then -- // Counter blox
         Text = 'No Deafen Effects';
     })
 
-    RunService.RenderStepped:Connect(function()
+    shared.__XennyWare.Connections['CBROLoop'] = RunService.RenderStepped:Connect(function()
 
         if (IsEnabled('NoDeaf')) then 
             Player.PlayerGui:WaitForChild('Deafen').Disabled = true;
@@ -2219,7 +2367,7 @@ elseif (PlaceId == 142823291) then
            return OldNameCall(self, unpack(Args));
       end));
 
-      RunService.RenderStepped:Connect(function()
+      shared.__XennyWare.Connections['MM2Loop'] = RunService.RenderStepped:Connect(function()
 
            UpdateRoles();
            GetSilentAimTarget();
@@ -2281,7 +2429,7 @@ elseif (PlaceId == 142823291) then
     local Client = Player.PlayerGui:WaitForChild('GUI', 9e9):WaitForChild('Client', 9e9);
     local ClientEnv = getsenv(Client);
     local Variables = Client:WaitForChild('Variables', 9e9);
-    local Functions = Client:WaitForChild('Functions', 9e9);
+    local OFunctions = Client:WaitForChild('Functions', 9e9);
     local Weapons = ReplicatedStorage:WaitForChild('Weapons', 9e9);
     local StepModules = Client:WaitForChild('StepModules', 9e9);
 
@@ -2756,7 +2904,7 @@ elseif (PlaceId == 142823291) then
             return Old(...);
         end);
 
-        Old2 = require(Functions.General).applyvelocity
+        Old2 = require(OFunctions.General).applyvelocity
 
         Old2 = function(...)
 
@@ -2838,7 +2986,7 @@ elseif (PlaceId == 142823291) then
             ReplicatedStorage.Events[utf8.char(8203, 72, 105, 116, 80, 97, 114, 116)]:FireServer(Part, "\0\0Knife\0D0¡ý\"µ\f'8±gÆÑd‚Q\fœœ", 'swagg');
         end;
 
-        Debris.ChildAdded:Connect(function(Object)
+        shared.__XennyWare.Connections['DebrisAdded'] = Debris.ChildAdded:Connect(function(Object)
             if (Object.Name == 'DeadHP') then
                 if (IsEnabled('AutoHeal')) and (RootPart ~= nil) then 
                     firetouchinterest(Object:WaitForChild('TouchInterest'), RootPart, 1);
@@ -2894,7 +3042,7 @@ elseif (PlaceId == 142823291) then
         end);
 
        
-        RunService.RenderStepped:Connect(function()
+        shared.__XennyWare.Connections['ArsenalLoop'] = RunService.RenderStepped:Connect(function()
 
             SilentAimCircle.Visible = IsEnabled('SilentVis');
             SilentAimCircle.Radius = GetProperty('SilentFOV');
@@ -3182,7 +3330,7 @@ elseif (PlaceId == 142823291) then
             return OldNameCall(self, ...);
         end))
 
-        RunService.RenderStepped:Connect(function()
+        shared.__XennyWare.Connections['SOALoop'] = RunService.RenderStepped:Connect(function()
 
             SilentAimCircle.Visible = IsEnabled('SilentVis');
             SilentAimCircle.Radius = GetProperty('SilentFOV');
