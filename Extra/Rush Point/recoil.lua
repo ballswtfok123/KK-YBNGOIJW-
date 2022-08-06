@@ -39,7 +39,7 @@
      p1.TotalSpreadY = p1.TotalSpreadY + (v6.Y * p2);
      u6:UpdateCrosshair(p1.TotalSpread);
      p1.RecoilIndex = p1.RecoilIndex + 1;
-     local v7 = p1.RecoilIndex;
+     local v7 = p1.RecoilIndex; 
      local v8 = #v5.Recoil;
      if (v8 <= v7) then
          p1.RecoilIndex = 1;

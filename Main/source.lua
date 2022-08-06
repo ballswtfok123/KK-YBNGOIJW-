@@ -141,6 +141,7 @@ shared.__XennyWare.Connections = {};
 shared.__XennyWare.Functions = {};
 shared.__XennyWare.Values = {};
 shared.__XennyWare.Modules = {};
+shared.__XennyWare.Instances = {};
 
 shared.__XennyWare.Users = {};
 shared.__XennyWare.Note = 'Hello person printing shared (or looking at the src), hope you are doing well.';
@@ -241,6 +242,7 @@ end;
 -- // Returns property of index from options table (QOL)
 
 local function GetProperty(Index)
+    if (Options[Index] == nil) then return print(Index) end;
     return Options[Index].Value;
 end;
 
@@ -279,6 +281,10 @@ Functions.GoTo = function(Position)
     end;
     
     RootPart.Position = Position;
+end;
+
+Functions.IsVisible = function(Part)
+    
 end;
 
 Functions.CharCheck = function()
@@ -765,6 +771,7 @@ local function LoadUniversal(LoadRage, UseDefault)
 
     HighlightFolder = Instance.new('Folder', CoreGui);
     HighlightFolder.Name = 'ESP';
+    table.insert(shared.__XennyWare.Instances, HighlightFolder);
 
     CreditsSection = Settings:AddRightGroupbox('Credits');
     Core = Misc:AddLeftGroupbox('Core');
@@ -817,6 +824,10 @@ local function LoadUniversal(LoadRage, UseDefault)
     SilentAimFOVCircle.Visible = false;
     SilentAimFOVCircle.Color = Color3.fromRGB(244, 244, 244);
     SilentAimFOVCircle.Thickness = 1;
+
+    local ColorCorrection = Instance.new('ColorCorrectionEffect', Lighting);
+
+    table.insert(shared.__XennyWare.Instances, ColorCorrection);
 
     -- // Declare UI library features
 
@@ -1072,10 +1083,32 @@ local function LoadUniversal(LoadRage, UseDefault)
     }):AddColorPicker('AmbientColor', {
         Text = 'Outdoor Ambient Color';
         Default = Lighting.OutdoorAmbient;
-    }):AddColorPicker('ActualAmbient', {
-        Text = 'Ambient Color';
+    }):AddColorPicker('TintColor', {
+        Text = 'Tint Color';
         Default = Lighting.Ambient;
+    }):OnChanged(function()
+        if (not IsEnabled('CustomAmbient')) then 
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255,255);
+            ColorCorrection.TintColor = Color3.fromRGB(255, 255, 255);
+        end;
+    end);
+
+    World:AddSlider('Contrast', {
+        Text = 'Contrast';
+        Min = 0;
+        Max = 100;
+        Default = 0;
+        Rounding = 2;
     });
+
+    World:AddSlider('Saturation', {
+        Text = 'Saturation';
+        Min = 0;
+        Max = 100;
+        Default = 0;
+        Rounding = 2;
+    })
+
 
     local NoFog = World:AddToggle('NoFog', {
         Text = 'No Fog';
@@ -1387,12 +1420,12 @@ local function LoadUniversal(LoadRage, UseDefault)
     ESP:AddToggle("TeamColor", {
         Text = 'Team Color'
     }):OnChanged(function()
-        ESPLib.options.teamcolor = IsEnabled('TeamColor');
+        ESPLib.options.teamColor = IsEnabled('TeamColor');
     end);
     ESP:AddToggle("DontShow", {
         Text = 'Dont Show Team'
     }):OnChanged(function()
-        ESPLib.options.teamcheck = not IsEnabled('DontShow');
+        ESPLib.options.teamCheck = not IsEnabled('DontShow');
     end);
 
 
@@ -1834,6 +1867,13 @@ local function LoadUniversal(LoadRage, UseDefault)
             GetAimbotTarget();
         end;
 
+        Camera = workspace.CurrentCamera;
+
+        -- // Handle color correction
+
+        ColorCorrection.Contrast = GetProperty('Contrast');
+        ColorCorrection.Saturation = GetProperty('Saturation');
+        
         -- // Handle FOV Circles
 
         AimbotFOVCircle.Visible = IsEnabled('ShowFOV');
@@ -2000,7 +2040,7 @@ local function LoadUniversal(LoadRage, UseDefault)
 
             if (IsEnabled('CustomAmbient')) then 
                 Lighting.OutdoorAmbient = GetProperty('AmbientColor');
-                Lighting.Ambient = GetProperty('ActualAmbient');
+                ColorCorrection.TintColor = GetProperty('TintColor');
             end;
 
             if (IsEnabled('CustomColorShift')) then 
@@ -3123,6 +3163,8 @@ elseif (PlaceId == 142823291) then
                 if (IsEnabled('HealthESP')) then 
                     local __ = Object -- // sowwy ><
                     local Cham = Instance.new('BoxHandleAdornment', __);
+
+                    table.insert(shared.__XennyWare.Instances, Cham);
                     Cham.Adornee = __;
                     Cham.Size = __.Size;
                     Cham.Transparency = 0.5;
@@ -3141,6 +3183,7 @@ elseif (PlaceId == 142823291) then
                 if (IsEnabled('AmmoESP')) then 
                     local __ = Object -- // sowwy ><
                     local Cham = Instance.new('BoxHandleAdornment', __);
+                    table.insert(shared.__XennyWare.Instances, HighlightFolder);
                     Cham.Adornee = __;
                     Cham.Size = __.Size;
                     Cham.Transparency = 0.5;
@@ -3483,7 +3526,7 @@ elseif (PlaceId == 142823291) then
         local Characters;
         local Helpers = ReplicatedStorage.Modules.Client.Helpers
 
-
+      
         for Index, Value in next, getgc(true) do
             if (type(Value) == 'function') and (islclosure(Value)) and (debug.getinfo(Value).name == 'NewChar') then
                 Characters = getupvalue(Value, 1); --> [1] = table [2] (real-chars) = table (in-game chars)
@@ -3492,6 +3535,7 @@ elseif (PlaceId == 142823291) then
 
         --local ResetRecoil = require(Helpers.RecoilHandler).ResetRecoil;
 
+        
         function ESPLib.GetTeam(Player)
             return Player:FindFirstChild('SelectedTeam').Value;
         end;
@@ -3500,12 +3544,22 @@ elseif (PlaceId == 142823291) then
             if (Characters[Player] == nil) or (not Characters[Player]:FindFirstChild('HumanoidRootPart')) then return nil, nil end;
             return Characters[Player], Characters[Player]:FindFirstChild('HumanoidRootPart');
         end;
+        
+        local SilentAimCircle = Drawing.new('Circle');
+        SilentAimCircle.Radius = 150;
+        SilentAimCircle.Visible = false;
+        SilentAimCircle.Thickness = 3;
+        SilentAimCircle.Color = Color3.fromRGB(255, 255, 255);
 
         local SilentAim = TabB:AddTab('Silent Aim');
         local GunMods = TabH:AddTab('Gun Mods');
+        local Viewmodel = Visuals:AddRightGroupbox('Viewmodel');
 
         SilentAim:AddToggle('SilentAim', {
             Text = 'Enable';
+        }):AddColorPicker('SilentColor', {
+            Text = 'FOV Color';
+            Default = Color3.fromRGB(255, 255, 255);
         });
 
         SilentAim:AddDropdown('Silent_Body', {
@@ -3553,37 +3607,68 @@ elseif (PlaceId == 142823291) then
             Text = 'No Cam Shake';
         });
 
+        Viewmodel:AddToggle('CustomArms', {
+            Text = 'Custom Arms';
+        }):AddColorPicker('ArmColor', {
+            Text = 'Arm Color';
+            Default = Color3.fromRGB(255, 255, 255);
+        });
+
+        Viewmodel:AddDropdown('ArmMaterial', {
+            Text = 'Arm Material';
+            Values = {'ForceField'; 'SmoothPlastic'; 'Neon'};
+            Default = 1;
+        });
+
+        Viewmodel:AddSlider('ArmTrans', {
+            Text = 'Arm Transparency';
+            Min = 0;
+            Max = 1;
+            Rounding = 2;
+            Default = 0;
+        });
+
+        Viewmodel:AddToggle('CustomGun', {
+            Text = 'Custom Gun';
+        }):AddColorPicker('GunColor', {
+            Text = 'Arm Color';
+            Default = Color3.fromRGB(255, 255, 255);
+        });
+
+        Viewmodel:AddDropdown('GunMaterial', {
+            Text = 'Gun Material';
+            Values = {'ForceField'; 'SmoothPlastic'; 'Neon'};
+            Default = 1;
+        });
+
+        Viewmodel:AddSlider('GunTrans', {
+            Text = 'Gun Transparency';
+            Min = 0;
+            Max = 1;
+            Rounding = 2;
+            Default = 0;
+        });
+
+        ViewModel:AddToggle('CustomOffset', {
+            Text = 'Offset';
+        });
+
         GetCharacter = function(Player)
             return Characters[Player];
         end;
 
         Functions.GetTeam = function(Player)
-            return Player.SelectedTeam.Value;
+
+            local TeamColor;
+
+            if (Player.SelectedTeam.Value == 'Attackers') then 
+                TeamColor = Color3.fromRGB(255, 0, 0);
+            else
+                TeamColor = Color3.fromRGB(0,0 ,255);
+            end;
+
+            return Player.SelectedTeam.Value, TeamColor;
         end;
-
-        -- // credits to xup
-
-        local function SetPlayerMeta(Player)
-            local playermeta = getrawmetatable(Player)
-		    local old = playermeta.__index
-		    setreadonly(playermeta, false)
-		    playermeta.__index = newcclosure(function(index, key)
-                if checkcaller() and key == "Character" then
-                    return Characters[Player];
-                end;
-
-                return old(index, key);
-            end);
-
-            setreadonly(playermeta, true)
-        end;
-
-        for Index, Value in next, Players:GetPlayers() do 
-            if (Value ~= Player) then SetPlayerMeta(Value) end;
-        end;
-
-        Players.PlayerAdded:Connect(SetPlayerMeta);
-
 
         ModuleLoader = require(game:GetService("ReplicatedStorage").Modules.Shared.ModuleLoader);
         LoadedModules = ModuleLoader.LoadedModules;
@@ -3606,7 +3691,8 @@ elseif (PlaceId == 142823291) then
                    if (not Characters[Value]) then continue end;
                    local Char = Characters[Value];
                    if (not Char:FindFirstChild(GetProperty('Silent_Body'))) then continue end;
-        
+                   if (Char:FindFirstChild('Humanoid').Health <= 0) or (Char:FindFirstChild('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) then continue end;
+
                    Distance = (Char.HumanoidRootPart.CFrame.p - Camera.CFrame.p).Magnitude;
                    worldPoint = Char.Head.Position;
                    vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
@@ -3635,11 +3721,11 @@ elseif (PlaceId == 142823291) then
           return CFrame.new(Camera.CFrame['p'], Target.CFrame['p']);
         end;
         
-        --[[
+       
         Network.FireServer = function(...)
            local Args = {...};
-        
-            if (Args[2] == 'FireBullet') then
+            
+            if IsEnabled('SilentAim') and (Args[2] == 'FireBullet') then
         
                local Nearest = GetNearest()
         
@@ -3647,6 +3733,10 @@ elseif (PlaceId == 142823291) then
                    return Old(...);
                end;
         
+               if (math.random(1, 100) > GetProperty('SilentHitChance')) then
+                    return Old(...);
+               end;
+
                ResolvedRotation = ResolveRotation(Nearest);
                Args[3][1].OriginCFrame = ResolvedRotation;
                Args[3][1].RotationMatrix = ResolvedRotation - ResolvedRotation['p'];
@@ -3657,55 +3747,93 @@ elseif (PlaceId == 142823291) then
         
            return Old(...);
         end;
-        ]]
+        
       --  local Old = require(Helpers.RecoilHandler).AddRecoil
 
-    -- // locate recoil func :money_mouth:
-
-    for Index, Value in next, getgc(true) do 
-        if (type(Value) == 'function') and (islclosure(Value)) and (#getupvalues(Value) == 5) and (type(getupvalue(Value, 4)) == 'table') and (rawget(getupvalue(Value, 4), 'LastAimPunchSpringX')) then 
-
-            local Old = Value;
-
-           hookfunction(Value, function(...) 
-                if (IsEnabled('NoRecoil')) then 
-                    return;
-                end;
-                
-                return Old(...)
-            end)
-        end;
-    end;
         
-    -- // locate cam shake func :scream:
---[[
-    for Index, Value in next, getgc(true) do 
-        if (type(Value) == 'function') and (islclosure(Value) == true) and (#getconstants(Value) == 5)  and (getconstant(Value, 1) == 'TotalCameraX') and (getconstant(Value, 2) == 'TotalCameraY') and (getconstant(Value, 5) == 'LastCameraShakeTick') then 
-          --  Old = Value;
-    
-          -- hookfunction(Value, function(...) 
-           -- if (IsEnabled('NoCamShake')) then 
-              --  return end; return Old(...) end) 
-       -- end;
-    end;
-]]
-
-
         RunService.RenderStepped:Connect(function()
 
             -- // suck my nuts
-        
+            
+            SilentAimCircle.Visible = IsEnabled('SilentAim');
+            SilentAimCircle.Color = GetProperty('SilentColor');
+            SilentAimCircle.Position = WTS(Mouse.hit.p);
 
-            while IsEnabled('NoSpread') do task.wait();
-                for Index, Value in next, WeaponInfo do
-                    if (type(Value) == 'table') then
+            for Index, Value in next, WeaponInfo do task.wait()
+                if (type(Value) == 'table') then 
+
+                    if (IsEnabled('NoSpread')) then 
                         Value['Spread'] = 0;
                         Value['MovementSpreadTime'] = 0;
                         Value['MovementSpreadPenalty'] = 0;
+                        Value['FirstShotSpread'] = 0;
+                        Value['ScopeSpread'] = 0;
+                    end;
+
+                    if (IsEnabled('NoRecoil')) and (rawget(Value, 'Recoil')) and (Value.Recoil[1] ~= nil) then 
+                        Value.RecoilResetTime = 0;
+                         Value.Recoil[1].X = 0;
+                         Value.Recoil[1].Y = 0;
+                    end;
+
+                    if (IsEnabled('NoCamShake')) then 
+                        Value.Shake = 0;
+                        Value['CameraBeginMultiplier'] = 0;
+                        Value['CameraResetTime'] = 0;
+                        Value['CameraReturnMultiplier'] = 0;
+                        Value.K = 0;
+                        Value.D = 0;
+                        Value.X = 0;
+
+                        if (rawget(Value, 'Kickback')) then 
+                            Value.Kickback.X = 0;
+                            Value.Kickback.Y = 0;
+                            Value.Kickback.Z = 0;
+                        end;
                     end;
                 end;
-             end;
+            end;
+
+            if (IsEnabled('CustomArms')) or (IsEnabled('CustomGun')) then 
+                if (not Camera:FindFirstChild('Weapon')) then return end;
+
+                    local WeaponObject = Camera:FindFirstChild('Weapon'):FindFirstChild('Object');
+                    local OtherWeapon = Camera:FindFirstChild('Weapon'):FindFirstChild('MainGunParts');
+                    local Arms = Camera:FindFirstChild('Weapon'):FindFirstChild('Arms');
+
+                    if (not WeaponObject) or (not OtherWeapon) or (not Arms) then return end;
+
+                    if (IsEnabled('CustomArms')) then 
+                        for _, __ in next, Arms:GetDescendants() do 
+                            if (__:IsA('SurfaceAppearance')) then __:Destroy() end;
+                            if (__:IsA('MeshPart'))  then 
+
+                                if (__:IsA('MeshPart')) then __.TextureID = '0' end;
+
+                                __.Color = GetProperty('ArmColor');
+                                __.Material = GetProperty('ArmMaterial');
+                                __.Transparency = GetProperty('ArmTrans');
+                            end;
+                        end;
+                    end;
+
+                    if (IsEnabled('CustomGun')) then 
+                        for _, __ in next,  WeaponObject:GetDescendants() do 
+
+                                if (__:IsA('SurfaceAppearance')) then __:Destroy() end;
+                                
+                            if (__:IsA('MeshPart')) then
+                                if (__:IsA('MeshPart')) then __.TextureID = '0' end;
+                                
+                                __.Color = GetProperty('GunColor');
+                                __.Material = GetProperty('GunMaterial');
+                                __.Transparency = GetProperty('GunTrans');
+                            end;
+                        end;
+                    end;
+            end;
         end)
+        
     elseif (game.PlaceId == 2474168535) then 
         Create('Westbound');
         LoadUniversal();
@@ -3717,7 +3845,7 @@ else -- // Universal
 end;
 
 Library:Notify('Xenny-Ware | Created by xenny#0001 (642209011994722304) | https://youtube.com/c/xenny | enjoy!');
-Library:Notify('Successfully Loaded in: ' .. os.time() - Start .. '.');
+Library:Notify('Successfully Loaded in: ' .. os.time() - Start .. 'seconds(s).');
 
 Start = nil -- // :3
 Library:SetWatermarkVisibility(true);

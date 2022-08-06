@@ -44,12 +44,13 @@ local PCall = pcall;
 
 GetGenv().Utilites = Utilities;
 
-local Index, Value, L_Character, BodyParts, Settings, OldNameCall, OldIndex, Args, Method, Targets, _, __, worldPoint, vector, onScreen, magnitude, String, Returned, FunctionInfo, Success, Error, Drawing, Type, Properties
+local Index, Value, L_Character, BodyParts, Settings, OldNameCall, OldIndex, Args, Method, Targets, _, __, worldPoint, vector, onScreen, magnitude, String, Returned, FunctionInfo, Success, Error, Drawing, Type, Properties, OldNewIndex
 
 Utilities.SpoofedValues = {};
 Utilities.BlockedRemotes = {};
 Utilities.Connections = {};
 Utilities.Drawings = {};
+Utilites.SpoofedIndexes = {};
 
 Utilities.GetCharacter = function(Player)
     return Player.Character ~= nil and Player.Character;
@@ -227,6 +228,22 @@ Utilities.UnSpoof = function(Index)
     end;
 end;
 
+Utilites.SpoofIndex = function(Index, Value, Callback)
+    Insert(Utilities.SpoofedValues, {
+        ['Index'] = Index;
+        ['Value'] = Value;
+        ['Callback'] = (Callback ~= nil and Callback) or (false);
+    });
+end;
+
+Utilites.UnSpoofIndex = function(Index)
+    for _, __ in next, Utilites.SpoofedIndexes do 
+        if (Utilites.Find(__, Index)) then 
+            __ = nil;
+        end;
+    end;
+end;
+
 Utilities.TableToString = function(Table)
 
     String = '';
@@ -353,7 +370,7 @@ OldNameCall = HookMetaMethod(game, '__namecall', newcclosure(function(self, ...)
 end));
 
 
-OldIndex = HookMetaMethod(game, '__newindex', newcclosure(function(self, Index, Value)
+OldNewIndex = HookMetaMethod(game, '__newindex', newcclosure(function(self, Index, Value)
      
      for _, __ in next, Utilities.SpoofedValues do 
         if (__['Instance'] ~= nil) and (__['Instance'] == self) then 
