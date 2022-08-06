@@ -63,7 +63,8 @@ local EspLibrary = {
         chamsFillColor = Color3.new(1, 0, 0),
         chamsFillTransparency = 0.5,
         chamsOutlineColor = Color3.new(),
-        chamsOutlineTransparency = 0
+        chamsOutlineTransparency = 0.
+		chamsTeamCheck = false;
     },
 }
 
@@ -462,6 +463,10 @@ function EspLibrary.Init()
                 if (EspLibrary.options.teamCheck and (team == EspLibrary.GetTeam(localPlayer))) then
                     canShow = false
                 end
+
+				if (EspLibrary.chamsTeamCheck) and (team == EspLibrary.GetTeam(game.Players.LocalPlayer)) then 
+					canShow = false;
+				end;
 
                 highlight.Enabled = canShow
                 highlight.DepthMode = EspLibrary.options.visibleOnly and Enum.HighlightDepthMode.Occluded or Enum.HighlightDepthMode.AlwaysOnTop

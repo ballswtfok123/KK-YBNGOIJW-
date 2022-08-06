@@ -108,7 +108,11 @@ if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then
 end;
 
 if (not isfile('Xenny-Ware/Required/Utilities.lua')) then 
-   -- writefile('Xenny-Ware/Required/Utilities.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/Utilities.lua'));
+    writefile('Xenny-Ware/Required/Utilities.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/Utilities.lua'));
+end;
+
+if (not isfile('Xenny-Ware/Required/Signal.lua')) then 
+    writefile('Xenny-Ware/Required/Signal.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/Signal.lua'));
 end;
 
 local Version, UpdateDate = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/version.lua'))() or 'Unknown', 'Unknown';
@@ -149,6 +153,19 @@ local ThemeManager = loadfile('Xenny-Ware/Required/ThemeManager.lua')() -- // Cr
 local Maid = loadfile('Xenny-Ware/Required/Maid.lua')(); -- // Credit to quenty
 local ESPLib = loadfile('Xenny-Ware/Required/ESP.lua')(); -- // Credit to kiriot22
 
+ESPLib.Init();
+
+ESPLib.options.enabled = false;
+ESPLib.options.boxes = false;
+ESPLib.options.names = false;
+ESPLib.options.healthBars = false;
+ESPLib.options.distance = false;
+ESPLib.options.healthText = false;
+ESPLib.options.tracers = false;
+ESPLib.options.chams = false;
+ESPLib.options.outOfViewArrows = false;
+ESPLib.options.outOfViewArrowsOutline = false;
+
 local function Unload()
     game.CoreGui:FindFirstChild('ScreenGui'):Destroy();
 
@@ -156,7 +173,6 @@ local function Unload()
         Value:Disconnect();
     end;
 
-    ESPLib.Enabled = false;
     ESPLib['MainLoop']:Disconnect();
     ESPLib = {};
     HighlightFolder:ClearAllChildren();
@@ -164,10 +180,6 @@ local function Unload()
 end;
 
 shared.__XennyWare.Functions.Unload = Unload;
-
-ESPLib.Enabled = false;
-ESPLib.Names = false;
-ESPLib.Boxes = false;
 
 SaveManager:SetLibrary(Library)
 SaveManager:SetFolder('Xenny-Ware');
@@ -222,6 +234,7 @@ end;
 -- // Function for checking if certain ui features are enabled (QOL)
 
 local function IsEnabled(Index)
+    if (Toggles[Index] == nil) then return print(Index) end;
     return Toggles[Index].Value
 end;
 
@@ -1260,218 +1273,190 @@ local function LoadUniversal(LoadRage, UseDefault)
     local EnableESP = ESP:AddToggle('EnableESP', {
         Text = 'Enable';
     }):OnChanged(function()
-        ESPLib.Enabled = IsEnabled('EnableESP');
+        ESPLib.options.enabled = IsEnabled('EnableESP');
     end);
 
     local Boxes = ESP:AddToggle('Boxes', {
         Text = 'Boxes';
+    }):AddColorPicker('BoxColor', {
+        Text = 'Box Color';
+        Default = Color3.fromRGB(255, 255, 255);
     }):OnChanged(function()
-        ESPLib.Boxes = IsEnabled('Boxes');
+        ESPLib.options.boxes = IsEnabled('Boxes');
+    end);
+
+    ESP:AddToggle('BoxFill', {
+        Text = 'Box Fill';
+    }):AddColorPicker('BoxFillColor', {
+        Text = 'Fill Color';
+        Default = Color3.fromRGB(255, 255, 255);
+    }):OnChanged(function()
+        ESPLib.options.boxFill = IsEnabled('BoxFill');
+        ESPLib.options.BoxFillColor = GetProperty('BoxFillColor');
+    end)
+
+    
+    ESP:AddSlider('BoxFillTransparency', {
+        Text = 'Fill Transparency';
+        Min = 0;
+        Max = 1;
+        Default = 1;
+        Rounding = 2;
+    }):OnChanged(function()
+        ESPLib.options.boxFillTransparency = GetProperty('BoxFillTransparency');
+    end);
+
+    ESP:AddToggle('HealthBars', {
+        Text = 'Health Bars';
+    }):AddColorPicker('HealthBarColor', {
+        Text = 'Bar Color';
+        Default = Color3.fromRGB(0 ,255, 0);
+    }):OnChanged(function()
+        ESPLib.options.healthBars = IsEnabled('HealthBars');
+        ESPLib.options.healthBarsColor = GetProperty('HealthBarColor');
+    end);
+
+    ESP:AddSlider('HealthBarTransparency', {
+        Text = 'Bar Transparency';
+        Min = 0;
+        Max = 1;
+        Default = 1;
+        Rounding = 2;
+    }):OnChanged(function()
+        ESPLib.options.healthBarsTransparency = GetProperty('HealthBarTransparency');
+    end);
+
+    ESP:AddToggle('HealthAmt', {
+        Text = 'Health Amount';
+    }):AddColorPicker('HealthAmtColor', {
+        Text = 'Health Color';
+        Default = Color3.fromRGB(255, 255, 255);
+    }):OnChanged(function()
+        ESPLib.options.healthText = IsEnabled('HealthAmt');
+        ESPLib.options.healthTextColor = GetProperty('HealthAmtColor');
+    end);
+
+    ESP:AddToggle('DistanceE', {
+        Text = 'Distance Text';
+    }):AddColorPicker('DistanceEColor', {
+        Text = 'Color';
+        Default = Color3.fromRGB(255, 0, 0);
+    }):OnChanged(function()
+        ESPLib.options.distance = IsEnabled('DistanceE');
+        ESPLib.options.distanceColor = GetProperty('DistanceEColor');
     end);
 
     local Tracers = ESP:AddToggle('Tracers', {
         Text = 'Tracers';
+    }):AddColorPicker('TracerColor', {
+        Text = 'Color';
+        Default = Color3.fromRGB(255, 255, 255);
     }):OnChanged(function()
-        ESPLib.Tracers = IsEnabled('Tracers');
+        ESPLib.options.tracers = IsEnabled('Tracers');
+        ESPLib.options.tracerColor = GetProperty('TracerColor');
     end);
 
-    ESP:AddToggle("FaceCamera", {
-        Text = 'Face Camera'
+    ESP:AddSlider('TracerTrans', {
+        Text = 'Transprency';
+        Min = 0;
+        Max = 1;
+        Default = 1;
+        Rounding = 2;
     }):OnChanged(function()
-        ESPLib.FaceCamera = IsEnabled('FaceCamera');
+        ESPLib.options.tracerTransparency = GetProperty('TracerTrans');
     end);
+
+    ESP:AddDropdown('TracerOrigin', {
+        Text = 'Tracer Origin';
+        Values = {'Mouse'; 'Top'; 'Bottom'};
+        Default = 3;
+    }):OnChanged(function()
+        ESPLib.options.tracerOrigin = GetProperty('TracerOrigin');
+    end);
+
     ESP:AddToggle("Names", {
         Text = 'Names'
+    }):AddColorPicker('NameColor', {
+        Text  = 'NameColor';
+        Default = Color3.fromRGB(255, 255, 255);
     }):OnChanged(function()
-        ESPLib.Names = IsEnabled('Names');
+        ESPLib.options.names = IsEnabled('Names');
+        ESPLib.options.nameColor = GetProperty('NameColor');
+
     end);
     ESP:AddToggle("TeamColor", {
         Text = 'Team Color'
     }):OnChanged(function()
-        ESPLib.TeamColor = IsEnabled('TeamColor');
+        ESPLib.options.teamcolor = IsEnabled('TeamColor');
     end);
     ESP:AddToggle("DontShow", {
         Text = 'Dont Show Team'
     }):OnChanged(function()
-        ESPLib.TeamMates = not IsEnabled('DontShow');
+        ESPLib.options.teamcheck = not IsEnabled('DontShow');
     end);
-    ESP:AddSlider('ESPThick', {
-        Text = 'ESP Thickness',
-        Default = 2,
-        Min = 0,
-        Max = 10,
-        Rounding = 2
+
+
+    ESP:AddToggle('Outofview', {
+        Text = 'Out Of View Arrows';
+    }):AddColorPicker('OutClr', {
+        Text = 'Color';
+        Default = Color3.fromRGB(255, 255, 255);
+    }):AddColorPicker('LineClr', {
+        Text = 'Outline Color';
+        Default = Color3.fromRGB(1, 1, 1);
     }):OnChanged(function()
-        ESPLib.Thickness = GetProperty('ESPThick');
+        ESPLib.options.outOfViewArrows = IsEnabled('Outofview');
+
+    end);
+
+    ESP:AddSlider('OutTrans', {
+        Text = 'Transparency';
+        Min = 0;
+        Max = 1;
+        Rounding = 2;
+        Default = 1;
+    }):OnChanged(function()
+        ESPLib.options.outOfViewArrowsTransparency = GetProperty('OutTrans');
     end);
 
     local ChamsEnable = Chams:AddToggle('ChamsEnable', {
         Text = 'Toggle';
-    }):AddColorPicker('ChamsColor', {
-        Text = 'Chams Color';
+    }):AddColorPicker('ChamsFillColor', {
+        Text = 'Fill Color';
         Default = Color3.fromRGB(255, 255, 255);
+    }):AddColorPicker('ChamsOutlineColor', {
+        Text = 'Outline Color';
+        Default = Color3.fromRGB(1, 1, 1);
     }):OnChanged(function()
-        if (not IsEnabled('ChamsEnable')) then 
-            for Index, Value in next, Players:GetPlayers() do
-                if (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
-                    for _, __ in next, GetCharacter(Value):GetChildren() do 
-                        if (table.find(ValidParts, __.Name)) then 
-                            if (__:FindFirstChildOfClass('BoxHandleAdornment')) then 
-                                __:FindFirstChildOfClass('BoxHandleAdornment'):Destroy();
-                            end;
-                        end;
-                    end;
-                end;
-            end;
-        end;
+        ESPLib.options.chams = IsEnabled('ChamsEnable');
     end);
 
 
     local ChamsTeam = Chams:AddToggle('ChamsTeam', {
         Text = 'Team Check';
-    });
-
-    local ChamsTeamColor = Chams:AddToggle('ChamsTeamColor', {
-        Text = 'Chams Team Color';
-    });
-
-    local ChamsTransparency = Chams:AddSlider('ChamsTransparency', {
-        Text = 'Chams Transparency';
-        Min = 0;
-        Max = 1;
-        Default = 0;
-        Rounding = 3;
-    });
-
-    local Highlight = Chams:AddToggle('Highlight', {
-        Text = 'Highlight';
-    }):AddColorPicker('OutlineColor', {
-        Text = 'Outline Color';
-        Default = Color3.fromRGB(255, 255, 255);
-    }):AddColorPicker('FillColor', {
-        Text = 'Outline Color';
-        Default = Color3.fromRGB(255, 255, 255);
     }):OnChanged(function()
-        
-        if (IsEnabled('Highlight')) then 
-            for Index, Value in next, Players:GetPlayers() do
-                if (Value ~= Player) then 
-                
-                    if (IsEnabled('HighTeam')) and (Value.Team == Player.Team) then 
-                        continue;
-                    end;
+        ESPLib.options.chamsTeamCheck = IsEnabled('ChamsTeam');
+    end);   
 
-                    if (Value.Character == nil) then 
-                        continue;
-                    end;
-
-                    local Highlight = Instance.new('Highlight', HighlightFolder);
-                    Highlight.Name = Value.Name;
-                    Highlight.FillColor = GetProperty('FillColor');
-                    Highlight.OutlineColor = GetProperty('OutlineColor');
-                    Highlight.FillTransparency = GetProperty('FillTrans');
-                    Highlight.OutlineTransparency = GetProperty('OutlineTrans');
-                    Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
-                    Highlight.Adornee = GetCharacter(Value);
-
-                    shared.__XennyWare.Connections['HighCharAdded_' .. Value.Name] =  Value.CharacterAdded:Connect(function(Character) 
-                        if (HighlightFolder:FindFirstChild(Value.Name)) then  
-                            HighlightFolder:FindFirstChild(Value.Name).Adornee = Character;
-                        end;
-                    end);
-                end;
-            end;
-        else
-            HighlightFolder:ClearAllChildren();
-            for Index, Value in next, shared.__XennyWare.Connections do 
-                if (string.find(Index:lower(), 'highcharadded')) then 
-                    Value:Disconnect();
-                end;
-            end;
-        end;
-
-        if (IsEnabled('Highlight')) then 
-            for Index, Value in next, HighlightFolder:GetChildren() do 
-                Value.FillColor = GetProperty('FillColor');
-                Value.OutlineColor = GetProperty('OutlineColor');
-            end;
-        end;
-    end);
-
-    local FillTransparency = Chams:AddSlider('FillTrans', {
+    local ChamsTransparency = Chams:AddSlider('ChamFillTrans', {
         Text = 'Fill Transparency';
         Min = 0;
         Max = 1;
         Default = 0;
-        Rounding = 3
+        Rounding = 3;
     }):OnChanged(function()
-
-        if (not IsEnabled('Highlight')) then return end;
-
-        for Index, Value in next, HighlightFolder:GetChildren() do 
-            Value.FillTransparency = GetProperty('FillTrans');
-        end;
+        ESPLib.options.chamsFillTransparency = GetProperty('ChamFillTrans')
     end);
 
-    local OutlineTransparency = Chams:AddSlider('OutlineTrans', {
+
+    Chams:AddSlider('ChamsOutTrans', {
         Text = 'Outline Transparency';
         Min = 0;
         Max = 1;
         Default = 0;
-        Rounding = 3
+        Rounding = 3;
     }):OnChanged(function()
-
-        if (not IsEnabled('Highlight')) then return end;
-
-        for Index, Value in next, HighlightFolder:GetChildren() do 
-            Value.OutlineTransparency = GetProperty('FillTrans');
-        end;
-    end);
-
-    local DepthMode = Chams:AddDropdown('DepthMode', {
-        Text = 'Depth Mode';
-        Values = {'Occluded'; 'AlwaysOnTop'};
-        Default = 2;
-    }):OnChanged(function()
-        if (IsEnabled('Highlight')) then 
-            for Index, Value in next, HighlightFolder:GetChildren() do 
-                Value.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
-            end;
-        end;
-    end);
-
-    local TeamCheck = Chams:AddToggle('HighTeam', {
-        Text = 'Highlight Team Check';
-    }):OnChanged(function()
-        if (IsEnabled('Highlight')) then 
-            for Index, Value in next, HighlightFolder:GetChildren() do 
-                if (Players:FindFirstChild(Value.Name)) and (Players:FindFirstChild(Value.Name).Team ~= nil) and (Players:FindFirstChild(Value.Name).Team == Player.Team) then 
-                    Value:Destroy();
-                end;
-            end;
-        elseif (IsEnabled('Highlight')) then 
-            for Index, Value in next, Players:GetPlayers() do
-                if (Value ~= Player) then 
-                
-                    if (IsEnabled('HighTeam')) and (Value.Team == Player.Team) then 
-                        continue;
-                    end;
-
-                    if (GetCharacter(Value) == nil) or (not GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
-                        continue;
-                    end;
-
-                    local Highlight = Instance.new('Highlight', HighlightFolder);
-                    Highlight.Name = Value.Name;
-                    Highlight.FillColor = GetProperty('FillColor');
-                    Highlight.OutlineColor = GetProperty('OutlineColor');
-                    Highlight.FillTransparency = GetProperty('FillTrans');
-                    Highlight.OutlineTransparency = GetProperty('OutlineTrans');
-                    Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
-                    Highlight.Adornee = GetCharacter(Value);
-                end;
-            end;
-        end;
+        ESPLib.options.chamsOutlineTransparency = GetProperty('ChamsOutTrans')
     end);
 
 
@@ -1770,24 +1755,6 @@ local function LoadUniversal(LoadRage, UseDefault)
         Options.PlrTarget:SetValues();
         Options.Whitelist:SetValues();
         Options.HitboxWhitelist:SetValues();
-
-        shared.__XennyWare.Connections['CharAdded' .. Player.Name] =  Player.CharacterAdded:Connect(function(Character)
-            if (IsEnabled('Highlight')) then 
-
-                if (not HighlightFolder:FindFirstChild(Player.Name)) then 
-                    local Highlight = Instance.new('Highlight', HighlightFolder);
-                    Highlight.Name = Player.Name;
-                    Highlight.FillColor = GetProperty('FillColor');
-                    Highlight.OutlineColor = GetProperty('OutlineColor');
-                    Highlight.FillTransparency = GetProperty('FillTrans');
-                    Highlight.OutlineTransparency = GetProperty('OutlineTrans');
-                    Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
-                    Highlight.Adornee = Character;
-                else
-                    HighlightFolder:FindFirstChild(Player.Name).Adornee = Character
-                end;
-            end;
-        end);
     end);
 
     shared.__XennyWare.Connections['PlayerRemoving'] = Players.PlayerRemoving:Connect(function(Player)
@@ -1876,9 +1843,21 @@ local function LoadUniversal(LoadRage, UseDefault)
         AimbotFOVCircle.NumSides = GetProperty('AimbotSides');
         AimbotFOVCircle.Thickness = GetProperty('AimbotThickness');
 
+        ESPLib.options.BoxFillColor = GetProperty('BoxFillColor');
+        ESPLib.options.healthBarsColor = GetProperty('HealthBarColor');
+        ESPLib.options.healthTextColor = GetProperty('HealthAmtColor');
+        ESPLib.options.distanceColor = GetProperty('DistanceEColor');
+        ESPLib.options.tracerColor = GetProperty('TracerColor');
+        ESPLib.options.nameColor = GetProperty('NameColor');
+        ESPLib.options.boxesColor = GetProperty('BoxColor')
+        ESPLib.options.outOfViewArrowsColor = GetProperty('OutClr');
+        ESPLib.options.outOfViewArrowsOutlineColor = GetProperty('LineClr');
+
         -- // Watermark handler
 
-
+        ESPLib.options.chamsFillColor = GetProperty('ChamsFillColor');
+        ESPLib.options.chamsOutlineColor = GetProperty('ChamsOutlineColor');
+        
         FPS = 1 / Time
         Library:SetWatermark(('Xenny-Ware | %s FPS | %s MS | Build %s | %s'):format(math.ceil(FPS), math.ceil(Player:GetNetworkPing()), Version, os.date()));
         -- // Aimbot handler
@@ -1936,50 +1915,6 @@ local function LoadUniversal(LoadRage, UseDefault)
         if (IsEnabled('SelfHighlight')) and (HighlightFolder:FindFirstChild(Player.Name)) then 
             HighlightFolder:FindFirstChild(Player.Name).FillColor = GetProperty('SelfHighFill');
             HighlightFolder:FindFirstChild(Player.Name).OutlineColor = GetProperty('SelfHighOut');
-        end;
-
-        if (IsEnabled('ChamsEnable')) then 
-            for Index, Value in next, Players:GetPlayers() do 
-
-
-                if (IsEnabled('ChamsTeam')) and (Value.Team == Player.Team) then 
-                    continue;
-                end;
-                
-                if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
-
-                    for _, __ in next, GetCharacter(Value):GetChildren() do 
-
-                        if (not table.find(ValidParts, __.Name)) then 
-                            continue;
-                        end;
-
-                        if (__:FindFirstChildOfClass('BoxHandleAdornment')) then  
-
-                            if (not IsEnabled('ChamsTeamColor')) then
-                                __:FindFirstChildOfClass('BoxHandleAdornment').Color3 = GetProperty('ChamsColor');
-                            elseif (Value.Team ~= nil) and (IsEnabled('ChamsTeamColor')) then 
-                                __:FindFirstChildOfClass('BoxHandleAdornment').Color3 = Value.TeamColor.Color;
-                            end;
-
-                            __:FindFirstChildOfClass('BoxHandleAdornment').Transparency = GetProperty('ChamsTransparency');
-
-                            if (IsEnabled('ChamsTeam')) and (Value.Team == Player.Team) and (Value.Team ~= nil) then 
-                                __:Destroy();
-                                continue;
-                            end;
-                        else
-                            local Cham = Instance.new('BoxHandleAdornment', __);
-                            Cham.Adornee = __;
-                            Cham.Size = __.Size;
-                            Cham.Transparency = GetProperty('ChamsTransparency');
-                            Cham.Color3 = GetProperty('ChamsColor');
-                            Cham.AlwaysOnTop = true;
-                            Cham.ZIndex = 0;
-                        end;
-                    end;
-                end;
-            end;
         end;
 
         if (IsEnabled('ChatSpam')) then 
@@ -2099,23 +2034,6 @@ local function LoadUniversal(LoadRage, UseDefault)
                 end;
             end;
 
-            if (IsEnabled('Highlight')) and (HighlightFolder ~= nil) then 
-                for Index, Value in next, HighlightFolder:GetChildren() do
-                    
-                    if (not Value.ClassName == 'Highlight') or (not Players:FindFirstChild(Value.Name)) then continue end;
-
-                    if (IsEnabled('HighTeam')) and (Players:FindFirstChild(Value.Name).Team == Player.Team) then 
-                        HighlightFolder:FindFirstChild(Value.Name):Destroy();
-                        continue;
-                    end;
-
-                    Value.FillColor = GetProperty('FillColor');
-                    Value.OutlineColor = GetProperty('OutlineColor');
-                    Value.FillTransparency = GetProperty('FillTrans');
-                    Value.OutlineTransparency = GetProperty('OutlineTrans');
-                    Value.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
-                end;
-            end;
 
             if (IsEnabled('CustomCam')) and (Camera ~= nil) then 
                 for Index, Value in next, Camera:GetDescendants() do 
@@ -3563,13 +3481,7 @@ elseif (PlaceId == 142823291) then
         repeat task.wait() until ReplicatedStorage:FindFirstChild('BAC');
 
         local Characters;
-        local ModuleLoader = require(ReplicatedStorage:WaitForChild('Modules').Shared.ModuleLoader);
-        local Network = ModuleLoader.LoadedModules.Network;
         local Helpers = ReplicatedStorage.Modules.Client.Helpers
-        local CameraHandler = require(game.ReplicatedStorage:WaitForChild('Modules').Shared.ModuleLoader).LoadedModules.CameraModule;
-        local ModuleLoader = require(game:GetService("ReplicatedStorage").Modules.Shared.ModuleLoader);
-        local LoadedModules = ModuleLoader.LoadedModules;
-        local WeaponInfo = LoadedModules.WeaponInfo;
 
 
         for Index, Value in next, getgc(true) do
@@ -3579,8 +3491,15 @@ elseif (PlaceId == 142823291) then
          end;
 
         --local ResetRecoil = require(Helpers.RecoilHandler).ResetRecoil;
-        
-        local OldFire = Network.FireServer;
+
+        function ESPLib.GetTeam(Player)
+            return Player:FindFirstChild('SelectedTeam').Value;
+        end;
+
+        function ESPLib.GetCharacter(Player)
+            if (Characters[Player] == nil) or (not Characters[Player]:FindFirstChild('HumanoidRootPart')) then return nil, nil end;
+            return Characters[Player], Characters[Player]:FindFirstChild('HumanoidRootPart');
+        end;
 
         local SilentAim = TabB:AddTab('Silent Aim');
         local GunMods = TabH:AddTab('Gun Mods');
@@ -3594,7 +3513,8 @@ elseif (PlaceId == 142823291) then
             Default = 1;
             AllowNull = true;
             Multi = false;
-            Values = ListCharacterParts();
+            Values = {'Head'; 'UpperTorso'; 'HumanoidRootPart'};
+            Default = 1;
         });
 
         SilentAim:AddSlider('SilentFOV', {
@@ -3641,25 +3561,6 @@ elseif (PlaceId == 142823291) then
             return Player.SelectedTeam.Value;
         end;
 
-        ESPLib.Overrides.GetTeam = function(Player)
-            return Players:GetPlayerFromCharacter(Player.Charcter):FindFirstChild('SelectedTeam').Value;
-        end;
-
-        ESPLib.Overrides.GetColor = function(Player)
-            if (Functions.GetTeam(Player) == 'Attackers') then 
-                return Color3.fromRGB(255, 0, 0);
-            elseif (Functions.GetTeam(Player) == 'Defenders') then 
-                return Color3.fromRGB(0, 0, 255);
-            else
-                return Color3.fromRGB(255, 255, 255);
-            end;
-        end;
-
-        ESPLib.Overrides.GetPlrFromChar = function(Player)
-            iif (Player.Character == nil) then return nil;
-            return Players:GetPlayerFromCharacter(Player.Character);
-        end;
-
         -- // credits to xup
 
         local function SetPlayerMeta(Player)
@@ -3668,11 +3569,7 @@ elseif (PlaceId == 142823291) then
 		    setreadonly(playermeta, false)
 		    playermeta.__index = newcclosure(function(index, key)
                 if checkcaller() and key == "Character" then
-                    if (Characters[Player] ~= nil) then 
-                        return Characters[Player];
-                    else
-                        return nil;
-                    end;
+                    return Characters[Player];
                 end;
 
                 return old(index, key);
@@ -3688,41 +3585,77 @@ elseif (PlaceId == 142823291) then
         Players.PlayerAdded:Connect(SetPlayerMeta);
 
 
-        GetNearest = function()
-
-            S_Targets = {};
-
-            for Index, Value in next, Players:GetPlayers() do 
-                if (Value ~= Player) and (not Functions.GetTeam(Value) == Functions.GetTeam(Player)) then 
-
-                    local Char = Functions.GetCharacter(Value);
-
-                    if (not Char) then 
-                        return nil;
-                    end;
-
-                    local worldPoint = GetCharacter(Value):FindFirstChild(BodyPart.Value).Position;
-                    local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
-                    local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
-                    local Distance = (Char.HumanoidRootPart.Position - Camera.CFrame.p).Magnitude;
-
-                    if (Char ~= nil) and (magnitude < GetProperty('SilentFOV')) and (Distance <= GetProperty('SilentMaxDistance')) then 
-                        table.insert(S_Targets, {Distance, Char[GetProperty('Silent_Body')]});
-                    end;
-                end;
-            end;
-
-            if (#S_Targets > 1) then 
-                table.sort(S_Targets, function(A, B)
-                    return A[1] < B[1];
-                end);
-            end;
-
-            if (#S_Targets == 0) then 
-                return nil;
-            end;
-
-            return S_Targets[1][2];
+        ModuleLoader = require(game:GetService("ReplicatedStorage").Modules.Shared.ModuleLoader);
+        LoadedModules = ModuleLoader.LoadedModules;
+        local WeaponInfo = LoadedModules.WeaponInfo;
+        
+        Network = LoadedModules.Network;
+        local Old = Network.FireServer;
+        
+        --print(Old, Network.FireSever);
+        
+        --table.foreach(LoadedModules, print);
+        
+        
+        local function GetNearest()
+        
+           Targets = {};
+        
+           for Index, Value in next, Players:GetPlayers() do
+                   if (Value ~= Player) and (Value.SelectedTeam.Value ~= Player.SelectedTeam.Value) then
+                   if (not Characters[Value]) then continue end;
+                   local Char = Characters[Value];
+                   if (not Char:FindFirstChild(GetProperty('Silent_Body'))) then continue end;
+        
+                   Distance = (Char.HumanoidRootPart.CFrame.p - Camera.CFrame.p).Magnitude;
+                   worldPoint = Char.Head.Position;
+                   vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
+                   magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).Magnitude;
+           
+                   if (magnitude > GetProperty('SilentFOV')) then continue end;
+        
+                   table.insert(Targets, {Value, Distance, Char:FindFirstChild(GetProperty('Silent_Body'))});
+               end;
+           end;
+        
+           if (#Targets > 1) then
+            table.sort(Targets, function(a, b)
+                return a[2] < b[2];
+               end);
+           end;
+        
+           if (#Targets == 0) then
+               return nil;
+           end;
+        
+           return Targets[1][3];
+        end;
+        
+        local function ResolveRotation(Target)
+          return CFrame.new(Camera.CFrame['p'], Target.CFrame['p']);
+        end;
+        
+        
+        Network.FireServer = function(...)
+           local Args = {...};
+        
+            if (Args[2] == 'FireBullet') then
+        
+               local Nearest = GetNearest()
+        
+               if (not Nearest) then
+                   return Old(...);
+               end;
+        
+               ResolvedRotation = ResolveRotation(Nearest);
+               Args[3][1].OriginCFrame = ResolvedRotation;
+               Args[3][1].RotationMatrix = ResolvedRotation - ResolvedRotation['p'];
+        
+               return Old(unpack(Args));
+         
+           end;
+        
+           return Old(...);
         end;
 
       --  local Old = require(Helpers.RecoilHandler).AddRecoil
@@ -3745,49 +3678,23 @@ elseif (PlaceId == 142823291) then
     end;
         
     -- // locate cam shake func :scream:
-
+--[[
     for Index, Value in next, getgc(true) do 
         if (type(Value) == 'function') and (islclosure(Value) == true) and (#getconstants(Value) == 5)  and (getconstant(Value, 1) == 'TotalCameraX') and (getconstant(Value, 2) == 'TotalCameraY') and (getconstant(Value, 5) == 'LastCameraShakeTick') then 
-            Old = Value;
+          --  Old = Value;
     
-           hookfunction(Value, function(...) 
-            if (IsEnabled('NoCamShake')) then 
-                return end; return Old(...) end) 
-        end;
+          -- hookfunction(Value, function(...) 
+           -- if (IsEnabled('NoCamShake')) then 
+              --  return end; return Old(...) end) 
+       -- end;
     end;
-
-        Network.FireServer = function(...)
-
-            local Args = {...};
-
-            if (Args[2] == 'FireBullet') then 
-                
-                local Nearest = GetNearest();
-
-                if (Nearest == nil) then return OldFire(...) end;
-
-                local Modified = CFrame.new(Camera.CFrame['p'], Nearest.CFrame['p']);
-                Args[3][1].RotationMatrix = (Modified - Modified.p)
-                Args[3][1].OriginCFrame = Modified;
-
-                return OldFire(unpack(Args));
-            end;
-
-            return OldFire(...)
-        end;
+]]
 
 
         RunService.RenderStepped:Connect(function()
 
             -- // suck my nuts
-            
-            if (IsEnabled('Highlight')) then 
-                for _, __ in next, HighlightFolder:GetChildren() do 
-                    if (Characters[Players:FindFirstChild(__.Name)]) then 
-                        __.Adornee = Characters[Players:FindFirstChild(__.Name)]
-                    end;
-                end;
-            end;
+        
 
             while IsEnabled('NoSpread') do task.wait();
                 for Index, Value in next, WeaponInfo do
