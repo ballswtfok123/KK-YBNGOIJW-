@@ -29,30 +29,6 @@ local function Service(Service)
     return game:GetService(Service) or game[Service];
 end;
 
--- // unload function
-
-local function Unload()
-    CoreGui:FindFirstChild('ScreenGui'):Destroy();
-
-    for Index, Value in next, shared.__XennyWare.Connections do 
-        Value:Disconnect();
-    end;
-
-    ESP.Enabled = false;
-    HighlightFolder:ClearAllChildren();
-
-end;
-
--- // Check if UI is already loaded
-
-if (game.CoreGui:FindFirstChild('ScreenGui')) and (shared.__XennyWare ~= nil) then 
-    Unload();
-end;
-
-shared.__XennyWare = {};
-shared.__XennyWare.Connections = {};
-shared.__XennyWare.Functions = {};
-shared.__XennyWare.Values = {};
 
 -- // Check for needed functions
 
@@ -131,6 +107,10 @@ if (not isfile('Xenny-Ware/Required/ThemeManager.lua')) then
     writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/theme_manager.lua'));
 end;
 
+if (not isfile('Xenny-Ware/Required/Utilities.lua')) then 
+   -- writefile('Xenny-Ware/Required/Utilities.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/Utilities.lua'));
+end;
+
 local Version, UpdateDate = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/version.lua'))() or 'Unknown', 'Unknown';
 local Credits = loadstring(game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Extra/credits.lua'))();
 
@@ -146,8 +126,20 @@ if (readfile('Xenny-Ware/Extra/Version.lua') ~= Version) then
     writefile('Xenny-Ware/Required/Maid.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/maid.lua'));
     writefile('Xenny-Ware/Required/ESP.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/esp.lua'));
     writefile('Xenny-Ware/Required/ThemeManager.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/theme_manager.lua'));
+    writefile('Xenny-Ware/Required/Utilities.lua', game:HttpGet('https://raw.githubusercontent.com/ballswtfok123/Xenny-Ware/main/Required/Utilities.lua'));
     writefile('Xenny-Ware/Extra/Version.lua', Version);
 end;
+
+-- // Define core tables
+
+shared.__XennyWare = {};
+shared.__XennyWare.Connections = {};
+shared.__XennyWare.Functions = {};
+shared.__XennyWare.Values = {};
+shared.__XennyWare.Modules = {};
+
+shared.__XennyWare.Users = {};
+shared.__XennyWare.Note = 'Hello person printing shared (or looking at the src), hope you are doing well.';
 
 -- // Declare Library
 
@@ -156,6 +148,22 @@ local SaveManager = loadfile('Xenny-Ware/Required/SaveManager.lua')(); -- // Cre
 local ThemeManager = loadfile('Xenny-Ware/Required/ThemeManager.lua')() -- // Credits to wally for this
 local Maid = loadfile('Xenny-Ware/Required/Maid.lua')(); -- // Credit to quenty
 local ESPLib = loadfile('Xenny-Ware/Required/ESP.lua')(); -- // Credit to kiriot22
+
+local function Unload()
+    game.CoreGui:FindFirstChild('ScreenGui'):Destroy();
+
+    for Index, Value in next, shared.__XennyWare.Connections do 
+        Value:Disconnect();
+    end;
+
+    ESPLib.Enabled = false;
+    ESPLib['MainLoop']:Disconnect();
+    ESPLib = {};
+    HighlightFolder:ClearAllChildren();
+
+end;
+
+shared.__XennyWare.Functions.Unload = Unload;
 
 ESPLib.Enabled = false;
 ESPLib.Names = false;
@@ -166,6 +174,9 @@ SaveManager:SetFolder('Xenny-Ware');
 
 ThemeManager:SetFolder('Xenny-Ware');
 ThemeManager:SetLibrary(Library);
+
+getgenv().Functions = shared.__XennyWare.Functions;
+getgenv().Core = shared.__XennyWare.Core;
 
 -- // Declare Services
 
@@ -193,32 +204,52 @@ local Mouse = Player:GetMouse();
 local PlaceId = game.PlaceId;
 local JobId = game.JobId;
 
-local Modules = {};
-
--- // Declare Character & Character Parts
-
-local Character = Player.Character or Player.CharacterAdded:Wait();
-local Humanoid = Character:WaitForChild('Humanoid', 9e9);
-local RootPart = Character:WaitForChild('HumanoidRootPart', 9e9);
-
-
-
+local Modules = shared.__XennyWare.Modules;
 local Functions = shared.__XennyWare.Functions; -- // >w<
 
 -- // Declare used variables
 
 local Window, Main, Settings, AimbotBox, LocalBox, Visuals, Misc, Debug, OldNmaeCall, PlayerInfo, Luas, TabH, TabB, Rage, OldNameCall, Themes
 
+local function GetCharacter(Target)
+    if (Target.Character ~= nil) then 
+        return Target.Character;
+    end;
+
+    return nil;
+end;
+
+-- // Function for checking if certain ui features are enabled (QOL)
+
+local function IsEnabled(Index)
+    return Toggles[Index].Value
+end;
+
+-- // Returns property of index from options table (QOL)
+
+local function GetProperty(Index)
+    return Options[Index].Value;
+end;
+
 -- // Get nearest function
 
-Functions.GetNearest = function()
+Functions.GetTeam = function(Player)
+    return Player.Team
+end;
+
+Functions.GetNearest = function(TeamCheck)
     if (Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
         return;
     end;
 
     for Index, Value in next, Players:GetPlayers() do 
-        if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) and (Player:DistanceFromCharacter(Value.Character:FindFirstChild('HumanoidRootPart').Position) <= 40) then 
-            return Value, Value.Character, Value.Character.PrimaryPart, Value.Character.PrimaryPart.Position;
+        if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) and (Player:DistanceFromCharacter(GetCharacter(Value):FindFirstChild('HumanoidRootPart').Position) <= 40) then 
+
+            if (TeamCheck ~= nil) and (TeamCheck == true) and (Functions.GetTeam(Player) == Functions.GetTeam(Value)) then 
+                continue;
+            end;
+
+            return Value, GetCharacter(Value), GetCharacter(Value).PrimaryPart, GetCharacter(Value).PrimaryPart.Position;
         end;
     end; 
 
@@ -245,6 +276,14 @@ Functions.CharCheck = function()
     return true;
 end;
 
+
+Functions.IsDebug = function()
+    return shared.Debug == true;
+end;
+
+Functions.IsEnabled = IsEnabled;
+Functions.IsKeyDown = IsKeyDown;
+Functions.GetProperty = GetProperty;
 
 -- // Module Function
 
@@ -301,14 +340,25 @@ local function CleanupModules()
     return 'Successfully cleaned up modules';
 end;
 
+local function AA(angleX, angleY)
+    if (Character and RootPart) then
+        RootPart.CFrame = CFrame.new(RootPart.Position, RootPart.Position + Vector3.new(Camera.CFrame.lookVector.X, 0, Camera.CFrame.lookVector.Z)) * CFrame.Angles(math.rad(angleX), math.rad(angleY), 0);
+    end
+end;
+
+Functions.SetYaw = function(YAW)
+    AA(0, YAW);
+end;
+
 Functions.LoadModule = LoadModule;
 Functions.UnloadModule = UnloadModule;
 Functions.CleanupModules = CleanupModules;
 
+-- // Get character function 
+
 -- // Template function for ease of use
 
 local function Create(Name, LoadRage)
-
 
     Window = Library:CreateWindow('Xenny-Ware | ' .. Name, {AutoShow = true});
     Main = Window:AddTab('Main');
@@ -339,6 +389,72 @@ Functions.SaveConfig = function(Name)
     SaveManager:Save(Name);
 end;
 
+Functions.MakeTab = function(Name)
+    return Window:AddTab(Name);
+end;
+
+Functions.MakeSection = function(Tab, Name, Side)
+
+    -- // im sorry
+    if (Side:lower() == 'right') then 
+        return Tab:AddRightGroupbox(Name)
+    elseif (Side:lower() == 'left') then 
+        return Tab:AddLeftGroupbox(Name);
+    end;
+end;
+
+Functions.MakeToggle = function(Section, Name, Callback)
+    return Section:AddToggle(Name, {
+        Text = Name;
+    }):OnChanged(function()
+        if (Callback ~= nil) and (type(Callback) == 'function') then 
+            Callback(IsEnabled(Name));
+        end;
+    end);
+end;
+
+Functions.MakeButton = function(Section, Name, Callback)
+    return Section:AddButton(Name, function()
+        if (Callback ~= nil) and (type(Callback) == 'function') then 
+            Callback();
+        end;
+    end);
+end;
+
+Functions.MakeSlider = function(Section, Name, Min, Max, Default, Rounding, Callback)
+
+    Min = Min or 0;
+    Max = Max or 100;
+    Default = Deault or 0;
+    Rounding = Rounding or 1;
+    
+    return Section:AddSlider(Name, {
+        Text = Name;
+        Min = Min;
+        Max = Max;
+        Default = Default;
+        Rounding = Rounding;
+    }):OnChanged(function()
+        if (Callback ~= nil) and (type(Callback) == 'function') then 
+            Callback(GetProperty(Name));
+        end;
+    end);
+end;
+
+Functions.MakeDrop = function(Section, Name, Values, Multi, Callback)
+    Values = Values or {};
+
+    return Section:AddDropdown(Name, {
+        Text = Name;
+        Values = Values;
+        Multi = Multi ~= nil and Multi or false;
+    }):OnChanged(function()
+        if (Callback ~= nil) and (type(Callback) == 'function') then 
+            Callback(GetProperty(Name));
+        end;
+    end);
+end;
+
 -- // Init xenny ware functions
 
 
@@ -352,6 +468,7 @@ local function TweenTP(Target)
     Tween.Completed:Wait();
     
 end;
+
 
 -- // Camera objects thing (QOL)
 
@@ -372,7 +489,7 @@ local function CalculateAccountAge(Age)
     local Months = 0;
 
     if (Age >= 365) then 
-        repeat task.wait() Days -= 365 Years += 1 until Days < 365
+        repeat task.wait() Days -= 365 Years += 1 until Days < 365;
     end;
 
     if (Days >= 30) then 
@@ -382,17 +499,6 @@ local function CalculateAccountAge(Age)
     return Years .. 'y ' .. Months .. 'm ' .. Days .. 'd';
 end;
 
--- // Function for checking if certain ui features are enabled (QOL)
-
-local function IsEnabled(Index)
-    return Toggles[Index].Value
-end;
-
--- // Returns property of index from options table (QOL)
-
-local function GetProperty(Index)
-    return Options[Index].Value;
-end;
 
 -- // Replcaement for table.find because the original is so fucking dogshit
 
@@ -405,15 +511,15 @@ table.find = function(Table, Index)
     
     for _, __ in next, Table do 
         if (__ == Index) then 
-            return __;
+            return true;
         end;
 
         if (_ == Index) then 
-            return _;
+            return true;
         end;
     end;
     
-    return nil;
+    return false;
 end;
 
 -- // Check if a key is being held via the library toggled property (QOL)
@@ -459,6 +565,10 @@ local function GetLuaFiles()
     return out;
 end;
 
+Functions.Rejoin = function()
+    TeleportService:Teleport(PlaceId);
+end;
+
 -- // List character parts
 
 local function ListCharacterParts()
@@ -476,6 +586,8 @@ local function ListCharacterParts()
     return Parts;
 end;
 
+Functions.ListParts = ListCharacterParts;
+
 -- // World to screen function (returns vector2 of a vector3)
 
 local function WTS(Object)
@@ -487,13 +599,17 @@ end;
 
 local function SetUpCharacter(Character)
 
+    Character = Character;
+    Humanoid = Character:WaitForChild('Humanoid', 9e9);
+    RootPart = Character:WaitForChild('HumanoidRootPart', 9e9);
+
     if (Functions.OnCharAdded ~= nil) then 
         Functions.OnCharAdded(Character);
     end;
 
-    Character = Character;
-    Humanoid = Character:WaitForChild('Humanoid', 9e9);
-    RootPart = Character:WaitForChild('HumanoidRootPart', 9e9);
+    if (Options.SelfHighlight ~= nil) and (IsEnabled('SelfHighlight')) and (HighlightFolder:FindFirstChild(Player.Name)) then 
+        HighlightFolder:FindFirstChild(Player.Name).Adornee = Character;
+    end;
 end;
 
 -- // Returns a table of all players
@@ -510,6 +626,8 @@ local function FetchPlayers()
 
     return Selected;
 end;
+
+Functions.FetchPlayers = FetchPlayers;
 
 -- // Server hop function (not mine)
 
@@ -600,11 +718,15 @@ function Teleport()
     end
 end
 
+Functions.ServerHop = Teleport;
 
 -- // Load universal features
 
-local function LoadUniversal()
+local function LoadUniversal(LoadRage, UseDefault)
 
+    Character = GetCharacter(Player) ~= nil and GetCharacter(Player) or nil;
+    Humanoid = Character ~= nil and Character:FindFirstChildOfClass('Humanoid') ~= nil and Character:FindFirstChildOfClass('Humanoid') or nil;
+    RootPart = Character ~= nil and Character.PrimaryPart ~= nil and Character.PrimaryPart or nil;
 
     TabB = Main:AddLeftTabbox();
     AimbotBox = TabB:AddTab('Aimbot');
@@ -846,23 +968,6 @@ local function LoadUniversal()
         Default = 10;
     });
 
-    local AttachToBack = LocalBox:AddToggle('AttachToBack', {
-        Text = 'Attach To Back';
-    });
-
-    local AttachToBackOffset = LocalBox:AddSlider('BackOffset', {
-        Text = 'Offset';
-        Min = -10;
-        Max = 10;
-        Default = 2;
-        Rounding = 3;
-    });
-
-    local AttachMethod = LocalBox:AddDropdown('AttachMethod', {
-        Text = 'Detection Method';
-        Values = {'Mouse'; 'Nearest'};
-    });
-
     local HitboxToggle = HitboxExpander:AddToggle('Hitbox', {
         Text = 'Toggle';
     }):AddColorPicker('HitboxColor', {
@@ -900,7 +1005,7 @@ local function LoadUniversal()
     local HitboxSize = HitboxExpander:AddSlider('HitboxSize', {
         Text = 'Hitbox Size';
         Min = 0;
-        Max = 200;
+        Max = 100;
         Default = 1;
         Rounding = 3;
     });
@@ -952,8 +1057,11 @@ local function LoadUniversal()
     local Ambient = World:AddToggle('CustomAmbient', {
         Text = 'Custom Ambient';
     }):AddColorPicker('AmbientColor', {
-        Text = 'Ambient Color';
+        Text = 'Outdoor Ambient Color';
         Default = Lighting.OutdoorAmbient;
+    }):AddColorPicker('ActualAmbient', {
+        Text = 'Ambient Color';
+        Default = Lighting.Ambient;
     });
 
     local NoFog = World:AddToggle('NoFog', {
@@ -1008,7 +1116,7 @@ local function LoadUniversal()
         Text = 'Self Chams Color';
         Default = Color3.fromRGB(255, 255, 255);
     }):OnChanged(function()
-        if (not IsEnabled('SelfChams')) then 
+        if (not IsEnabled('SelfChams')) and (Character ~= nil) then 
             for Index, Value in next, Character:GetChildren() do 
                 if (table.find(WhitelistedClasses, Value.ClassName)) then 
                     Value.Material = 'SmoothPlastic';
@@ -1022,7 +1130,7 @@ local function LoadUniversal()
     });
 
     local SelfChamsMaterial = Self:AddDropdown('SelfChamsMaterial', {
-        Text = 'Chams Mataerial';
+        Text = 'Chams Material';
         Multi = false;
         Default = 1;
         Values = {'ForceField'; 'Foil'; 'Concrete'; 'SmoothPlastic'; 'Plastic'; 'Wood'; 'Neon'};
@@ -1040,16 +1148,66 @@ local function LoadUniversal()
         Text = 'Chams Brightness';
         Min = 0;
         Max = 650;
-        Default = RootPart.Reflectance;
+        Default = 0;
         Rounding = 0.3;
     });
+
+
+    local SelfHighlight = Self:AddToggle('SelfHighlight', {
+        Text = 'Self Highlight';
+    }):AddColorPicker('SelfHighOut', {
+        Text = 'Self Highlight Outline Color';
+        Default = Color3.fromRGB(255, 255, 255);
+    }):AddColorPicker('SelfHighFill', {
+        Text = 'Self Highlight Fill Color';
+        Default = Color3.fromRGB(255, 255, 255);
+    }):OnChanged(function()
+        if (IsEnabled('SelfHighlight')) then 
+            local Highlight = Instance.new('Highlight', HighlightFolder);
+            Highlight.Name = Player.Name;
+            Highlight.OutlineTransparency = GetProperty('SelfTrans');
+            Highlight.FillTransparency = GetProperty('FillTrans');
+            Highlight.OutlineColor = GetProperty('SelfHighOut');
+            Highlight.FillColor = GetProperty('SelfHighFill');
+
+            if (Character ~= nil) then 
+                Highlight.Adornee = Character;
+            end;
+        elseif (HighlightFolder:FindFirstChild(Player.Name)) then 
+                HighlightFolder:FindFirstChild(Player.Name):Destroy();
+        end;    
+    end);
+
+    local SelfOutlineTransparency = Self:AddSlider('SelfTrans', {
+        Text = 'Outline Transparency';
+        Min = 0;
+        Max = 1;
+        Default = 0;
+        Rounding = 3;
+    }):OnChanged(function()
+        if (IsEnabled('SelfHighlight')) and (HighlightFolder:FindFirstChild(Player.Name)) then 
+            HighlightFolder:FindFirstChild(Player.Name).OutlineTransparency = GetProperty('SelfTrans');
+        end;
+    end);
+
+    local SelfFillTransparency = Self:AddSlider('FillTrans', {
+        Text = 'Fill Transparency';
+        Min = 0;
+        Max = 1;
+        Default = 0;
+        Rounding  = 3;
+    }):OnChanged(function()
+        if (IsEnabled('SelfHighlight')) and (HighlightFolder:FindFirstChild(Player.Name)) then 
+            HighlightFolder:FindFirstChild(Player.Name).FillTransparency = GetProperty('FillTrans');
+        end;
+    end);
 
 
     local CamFOV = Render:AddSlider('CamFOV', {
         Text = 'Field of View';
         Min = 0;
         Max = 140;
-        Default = Camera.FieldOfView;
+        Default = 80;
         Rounding = 3;
     });
 
@@ -1060,8 +1218,8 @@ local function LoadUniversal()
     local ThirdPersonDistance = Render:AddSlider('ThirdPersonDistance', {
         Text = 'Third Person Distance';
         Min = 0;
-        Max = 200;
-        Default = 200;
+        Max = 80;
+        Default = 15;
         Rounding = 3;
     });
 
@@ -1155,8 +1313,8 @@ local function LoadUniversal()
     }):OnChanged(function()
         if (not IsEnabled('ChamsEnable')) then 
             for Index, Value in next, Players:GetPlayers() do
-                if (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) then 
-                    for _, __ in next, Value.Character:GetChildren() do 
+                if (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
+                    for _, __ in next, GetCharacter(Value):GetChildren() do 
                         if (table.find(ValidParts, __.Name)) then 
                             if (__:FindFirstChildOfClass('BoxHandleAdornment')) then 
                                 __:FindFirstChildOfClass('BoxHandleAdornment'):Destroy();
@@ -1214,7 +1372,7 @@ local function LoadUniversal()
                     Highlight.FillTransparency = GetProperty('FillTrans');
                     Highlight.OutlineTransparency = GetProperty('OutlineTrans');
                     Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
-                    Highlight.Adornee = Value.Character;
+                    Highlight.Adornee = GetCharacter(Value);
 
                     shared.__XennyWare.Connections['HighCharAdded_' .. Value.Name] =  Value.CharacterAdded:Connect(function(Character) 
                         if (HighlightFolder:FindFirstChild(Value.Name)) then  
@@ -1299,7 +1457,7 @@ local function LoadUniversal()
                         continue;
                     end;
 
-                    if (Value.Character == nil) or (not Value.Character:FindFirstChild('HumanoidRootPart')) then 
+                    if (GetCharacter(Value) == nil) or (not GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
                         continue;
                     end;
 
@@ -1310,7 +1468,7 @@ local function LoadUniversal()
                     Highlight.FillTransparency = GetProperty('FillTrans');
                     Highlight.OutlineTransparency = GetProperty('OutlineTrans');
                     Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
-                    Highlight.Adornee = Value.Character;
+                    Highlight.Adornee = GetCharacter(Value);
                 end;
             end;
         end;
@@ -1328,14 +1486,18 @@ local function LoadUniversal()
     local Spectate = PlayerBox:AddToggle('Spectate', {
         Text = 'Spectate';
     }):OnChanged(function()
-        if (IsEnabled('Spectate')) and (Character ~= nil) and (Humanoid ~= nil) and (GetProperty('PlrTarget') ~= nil) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (Players:FindFirstChild(GetProperty('PlrTarget')) ~= nil) and (Players:FindFirstChild(GetProperty('PlrTarget')).Character:FindFirstChildOfClass('Humanoid')) then 
-            Camera.CameraSubject = Players:FindFirstChild(GetProperty('PlrTarget')).Character:FindFirstChildOfClass('Humanoid');
+        if (IsEnabled('Spectate')) and (Character ~= nil) and (Humanoid ~= nil) and (GetProperty('PlrTarget') ~= nil) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (Players:FindFirstChild(GetProperty('PlrTarget')) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChildOfClass('Humanoid')) then 
+            Camera.CameraSubject = GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChildOfClass('Humanoid');
         end;
 
         if (not IsEnabled('Spectate')) and (Humanoid ~= nil) and (Character ~= nil) then 
             Camera.CameraSubject = Humanoid;
         end;
     end);
+
+    local LoopTeleport = PlayerBox:AddToggle('LoopTeleport', {
+        Text = 'Loop Teleport';
+    });
 
     PlayerInfo = PlayerBox:AddDropdown('PlrTarget', {
         Text = 'Players';
@@ -1349,11 +1511,11 @@ local function LoadUniversal()
 
         TargetPlayer = Players:FindFirstChild(GetProperty('PlrTarget')) or 'nil';
         TargetTeam =  TargetPlayer.Team ~= nil and type(TargetPlayer.Team.Name) == 'string' and TargetPlayer.Team.Name or 'None';
-        StudsAway = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(TargetPlayer.Character:FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
-        CurrentHealth = TargetPlayer ~= nil and TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid') and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health or 0;
-        CurrentTool = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Tool') and TargetPlayer.Character:FindFirstChildOfClass('Tool').Name or 'None';
+        StudsAway = GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(GetCharacter(TargetPlayer):FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
+        CurrentHealth = TargetPlayer ~= nil and GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid') and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health or 0;
+        CurrentTool = GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChildOfClass('Tool') and GetCharacter(TargetPlayer):FindFirstChildOfClass('Tool').Name or 'None';
 
-        HealthColor = TargetPlayer.Character ~= nil and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 75 and Color3.fromRGB(0, 255, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health <= 75 and TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health >= 35 and Color3.fromRGB(255, 127, 0) or TargetPlayer.Character:FindFirstChildOfClass('Humanoid').Health < 34 and Color3.fromRGB(255, 0, 0);
+        HealthColor = GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health >= 75 and Color3.fromRGB(0, 255, 0) or GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health <= 75 and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health >= 35 and Color3.fromRGB(255, 127, 0) or GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health < 34 and Color3.fromRGB(255, 0, 0);
         TeamColor = TargetPlayer.Team ~= nil and TargetPlayer.Team.Name ~= nil and TargetPlayer.Team.TeamColor ~= nil and TargetPlayer.Team.TeamColor or Color3.fromRGB(255, 255, 255);
 
         
@@ -1367,20 +1529,22 @@ local function LoadUniversal()
     end);
 
     local TeleportTarget = PlayerBox:AddButton('Teleport', function()
-        if (Character ~= nil) and (RootPart ~= nil) and (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (Players:FindFirstChild(GetProperty('PlrTarget')).Character ~= nil) and (Players:FindFirstChild(GetProperty('PlrTarget')).Character:FindFirstChild('HumanoidRootPart')) then 
-            RootPart.CFrame = Players:FindFirstChild(GetProperty('PlrTarget')).Character:FindFirstChild('HumanoidRootPart').CFrame;
+        if (Character ~= nil) and (RootPart ~= nil) and (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart')) then 
+            RootPart.CFrame = GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart').CFrame;
         end;
     end);
 
     local CopyProfile = PlayerBox:AddButton('Copy Profile Link', function()
         if (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) then 
             setclipboard(string.format('https://www.roblox.com/users/%s/profile', Players:FindFirstChild(GetProperty('PlrTarget')).UserId));
+            Library:Notify('Successfully copied profile link.');
         end;
     end);
 
     local CopyUserId = PlayerBox:AddButton('Copy User Id', function()
         if (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) then 
             setclipboard(Players:FindFirstChild(GetProperty('PlrTarget')).UserId);
+            Library:Notify('Successfully copied user id.');
         end;
     end);
 
@@ -1427,6 +1591,7 @@ local function LoadUniversal()
     Luas:AddButton('Delete Auto Load Lua', function()
         if (isfile('Xenny-Ware/Luas/autoload.LUA')) then 
             delfile('Xenny-Ware/Luas/autoload.LUA');
+            Library:Notify('Successfully deleted auto-load lua.');
         else
             Library:Notify('Error: there is no auto loaded lua set');
         end;
@@ -1444,11 +1609,11 @@ local function LoadUniversal()
         Targets = {};
 
         for Index, Value in next, Players:GetPlayers() do 
-            if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChildOfClass('Humanoid')) and (Value.Character:FindFirstChild('HumanoidRootPart')) then 
+            if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid')) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
 
                 -- // Distance check
 
-                if ((Player:DistanceFromCharacter(Value.Character['HumanoidRootPart'].Position)) > GetProperty('AimbotDistance')) then 
+                if ((Player:DistanceFromCharacter(GetCharacter(Value)['HumanoidRootPart'].Position)) > GetProperty('AimbotDistance')) then 
                     continue;
                 end;
 
@@ -1466,25 +1631,25 @@ local function LoadUniversal()
 
                 -- // Check for forcefield
 
-                if (Checks.Value['ForceField'] ~= nil) and (Value.Character:FindFirstChildOfClass('ForceField')) then 
+                if (Checks.Value['ForceField'] ~= nil) and (GetCharacter(Value):FindFirstChildOfClass('ForceField')) then 
                     continue;
                 end;
 
                 -- // Check if the player is dead
 
-                if (Checks.Value['Dead'] ~= nil) and (Value.Character:FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) then 
+                if (Checks.Value['Dead'] ~= nil) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) then 
                     continue;
                 end;
 
                 -- // Check if the player is sitting
 
-                if (Checks.Value['Sitting'] ~= nil) and (Value.Character:FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Seated) then 
+                if (Checks.Value['Sitting'] ~= nil) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Seated) then 
                     continue;
                 end;
 
                 -- // Jump check
 
-                if (Checks.Value['Jumping'] ~= nil) and (Value.Character:FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Jumping) then 
+                if (Checks.Value['Jumping'] ~= nil) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Jumping) then 
                     continue;
                 end;
 
@@ -1496,7 +1661,7 @@ local function LoadUniversal()
 
                 -- // Stole this from old source (too lazy to make a new one)
 
-                if (not Value.Character:FindFirstChild(BodyPart.Value)) then 
+                if (not GetCharacter(Value):FindFirstChild(BodyPart.Value)) then 
                     continue;
                 end;
 
@@ -1506,16 +1671,16 @@ local function LoadUniversal()
                     end;
                 end;
 
-                local worldPoint = Value.Character:WaitForChild(BodyPart.Value).Position;
+                local worldPoint = GetCharacter(Value):FindFirstChild(BodyPart.Value).Position;
                 local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
                 local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
 
-                if (onScreen and magnitude <= GetProperty('AimbotFOV') and Value.Character) then
+                if (onScreen and magnitude <= GetProperty('AimbotFOV') and GetCharacter(Value) ~= nil) then
                     table.insert(Targets, {
                         Value;
-                        Value.Character;
-                        Value.Character.Humanoid.Health;
-                        Player:DistanceFromCharacter(Value.Character[BodyPart.Value].Position);
+                        GetCharacter(Value);
+                        GetCharacter(Value).Humanoid.Health;
+                        Player:DistanceFromCharacter(GetCharacter(Value)[BodyPart.Value].Position);
                     });
                 end;
 
@@ -1619,7 +1784,7 @@ local function LoadUniversal()
                     Highlight.DepthMode = Enum.HighlightDepthMode[GetProperty('DepthMode')];
                     Highlight.Adornee = Character;
                 else
-                    HighlightFolder:FindFirstChild(Value.Name).Adornee = Character
+                    HighlightFolder:FindFirstChild(Player.Name).Adornee = Character
                 end;
             end;
         end);
@@ -1718,7 +1883,7 @@ local function LoadUniversal()
         Library:SetWatermark(('Xenny-Ware | %s FPS | %s MS | Build %s | %s'):format(math.ceil(FPS), math.ceil(Player:GetNetworkPing()), Version, os.date()));
         -- // Aimbot handler
 
-        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (Input:IsMouseButtonPressed(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
+        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (Input:IsMouseButtonPressed(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (GetCharacter(Targets[1][1]) ~= nil) then 
 
 
             -- // Sort through the targets table by distance or health
@@ -1733,10 +1898,10 @@ local function LoadUniversal()
                 end);
             end;
 
-            if (Targets[1][1] ~= nil) and (Targets[1][1].Character ~= nil) then 
+            if (Targets[1][1] ~= nil) and (GetCharacter(Targets[1][1]) ~= nil) then 
                 -- // Get position of the part
 
-                local worldPoint = Targets[1][1].Character[BodyPart.Value].Position;
+                local worldPoint = GetCharacter(Targets[1][1])[BodyPart.Value].Position;
                 local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
                 local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
                 local dist = (Vector2.new(vector.X, vector.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude;
@@ -1748,20 +1913,29 @@ local function LoadUniversal()
                 -- // Check for prediction
 
                 if (IsEnabled('AimbotPrediction')) then
-                    worldPoint = Targets[1][1].Character[BodyPart.Value].Position + (Targets[1][1].Character[BodyPart.Value].Velocity * GetProperty('AimbotPredictionAmount'))
+                    worldPoint = GetCharacter(Targets[1][1])[BodyPart.Value].Position + (GetCharacter(Targets[1][1])[BodyPart.Value].Velocity * GetProperty('AimbotPredictionAmount'))
                 end;
 
                 -- // Lock on the the part if the character isnt nil
 
-                if (Targets[1][1].Character ~= nil) then 
+                if (GetCharacter(Targets[1][1]) ~= nil) then 
                     mousemoverel(-xsmooth, -ysmooth);
                 end;
 
             end;
         end;
 
-        if (Options.BindFly.Toggled == false) then 
+        if (Options.BindFly.Toggled == false) and (RootPart ~= nil) then 
             RootPart.Anchored = false;
+        end;
+
+        if (IsEnabled('LoopTeleport')) and (Character ~= nil) and (RootPart ~= nil) and (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart')) then 
+            RootPart.CFrame = GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart').CFrame;
+        end;
+
+        if (IsEnabled('SelfHighlight')) and (HighlightFolder:FindFirstChild(Player.Name)) then 
+            HighlightFolder:FindFirstChild(Player.Name).FillColor = GetProperty('SelfHighFill');
+            HighlightFolder:FindFirstChild(Player.Name).OutlineColor = GetProperty('SelfHighOut');
         end;
 
         if (IsEnabled('ChamsEnable')) then 
@@ -1772,9 +1946,9 @@ local function LoadUniversal()
                     continue;
                 end;
                 
-                if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) then 
+                if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
 
-                    for _, __ in next, Value.Character:GetChildren() do 
+                    for _, __ in next, GetCharacter(Value):GetChildren() do 
 
                         if (not table.find(ValidParts, __.Name)) then 
                             continue;
@@ -1828,7 +2002,7 @@ local function LoadUniversal()
 
                         if (IsEnabled('Hitbox')) then 
                             for Index, Value in next, Players:GetPlayers() do 
-                                if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) then 
+                                if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) then 
             
                                     -- // Checks 
             
@@ -1847,9 +2021,9 @@ local function LoadUniversal()
             
                                     
                                     for _, __ in next, HitboxPart.Value do 
-                                        if (Value.Character:FindFirstChild(_)) then 
+                                        if (GetCharacter(Value):FindFirstChild(_)) then 
                                             
-                                            local Part = Value.Character:FindFirstChild(_);
+                                            local Part = GetCharacter(Value):FindFirstChild(_);
             
                                             Part.Size = Vector3.new(GetProperty('HitboxSize'), GetProperty('HitboxSize'), GetProperty('HitboxSize'));
                                             Part.Transparency = GetProperty('HitboxTransparency');
@@ -1891,6 +2065,7 @@ local function LoadUniversal()
 
             if (IsEnabled('CustomAmbient')) then 
                 Lighting.OutdoorAmbient = GetProperty('AmbientColor');
+                Lighting.Ambient = GetProperty('ActualAmbient');
             end;
 
             if (IsEnabled('CustomColorShift')) then 
@@ -1908,7 +2083,7 @@ local function LoadUniversal()
             Lighting.GlobalShadows = IsEnabled('GlobalShadows');
             Camera.FieldOfView = CamFOV.Value;
 
-            if (IsEnabled('SelfChams')) and (RootPart ~= nil) then 
+            if (IsEnabled('SelfChams')) and (Character ~= nil) then 
                 for Index, Value in next, Character:GetChildren() do 
 
                     if (IsEnabled('DeleteAccessories')) and (Value:IsA('Accessory')) or (Value:IsA('Hat')) or (Value:IsA('Shirt')) or (Value:IsA('Pants')) then 
@@ -2190,7 +2365,7 @@ elseif (PlaceId == 142823291) then
 
       local function UpdateRoles()
         for Index, Value in next, Players:GetPlayers() do 
-            if (Value ~= Player) and (Value.Character ~= nil) then 
+            if (Value ~= Player) and (GetCharacter(Value) ~= nil) then 
                 local Data = PlayerData:InvokeServer()[Player.Name];
 
                 if (Data == nil) then 
@@ -2317,18 +2492,18 @@ elseif (PlaceId == 142823291) then
 
       local function GetSilentAimTarget()
         for Index, Value in next, Players:GetPlayers() do 
-            if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) and (Value.Character:FindFirstChildOfClass('Humanoid')) and (Player:DistanceFromCharacter(Value.Character:FindFirstChild('HumanoidRootPart').Position) <= 300) and (Value:FindFirstChild(GetProperty('SilentBodyPart'))) then
+            if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid')) and (Player:DistanceFromCharacter(GetCharacter(Value):FindFirstChild('HumanoidRootPart').Position) <= 300) and (Value:FindFirstChild(GetProperty('SilentBodyPart'))) then
                   
                   if (IsEnabled('SilentFriends')) and (Player:IsFriendsWith(Value.UserId)) then 
                       continue;
                   end;
 
                   
-                  local worldPoint = Value.Character:FindFirstChild(GetProperty('SilentBodyPart')).Position;
+                  local worldPoint = GetCharacter(Value):FindFirstChild(GetProperty('SilentBodyPart')).Position;
                   local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
                   local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
 
-                  if (magnitude <= GetProperty('SilentFOV')) and (Value.Character ~= nil) then 
+                  if (magnitude <= GetProperty('SilentFOV')) and (GetCharacter(Value) ~= nil) then 
                       return Value;
                   end;
             end;
@@ -2340,26 +2515,26 @@ elseif (PlaceId == 142823291) then
            local Method = getnamecallmethod();
 
            if (Method == 'InvokeServer') and (tostring(self) == 'ShootGun') then
-            if (IsEnabled('SilentAim'))  and (GetSilentAimTarget() ~= nil) and (GetSilentAimTarget().Character ~= nil) and (GetSilentAimTarget().Character:FindFirstChild(GetProperty('SilentBodyPart')))  then 
+            if (IsEnabled('SilentAim'))  and (GetSilentAimTarget() ~= nil) and (GetCharacter(GetSilentAimTarget()) ~= nil) and (GetCharacter(GetSilentAimTarget()):FindFirstChild(GetProperty('SilentBodyPart')))  then 
 
 
                local FinalPart = 'HumanoidRootPart';
 
                if (IsEnabled('AutoAdjust')) then 
-                    if (GetSilentAimTarget().Character.Humanoid:GetState() == Enum.HumanoidStateType.Jumping) then 
+                    if (GetCharacter(GetSilentAimTarget()).Humanoid:GetState() == Enum.HumanoidStateType.Jumping) then 
                         FinalPart = 'Right Leg';
                     end;
 
-                    if (GetSilentAimTarget().Character.Humanoid:GetState() == Enum.HumanoidStateType.FallingDown) then 
+                    if (GetCharacter(GetSilentAimTarget()).Humanoid:GetState() == Enum.HumanoidStateType.FallingDown) then 
                         FinalPart = 'Right Foot';
                     end;
 
-                    if (GetSilentAimTarget().Character.Humanoid:GetState() == Enum.HumanoidStateType.Freefall) then 
+                    if (GetCharacter(GetSilentAimTarget()).Humanoid:GetState() == Enum.HumanoidStateType.Freefall) then 
                         FinalPart = 'Left Foot';
                     end;
                end;
 
-               Args[2] = GetSilentAimTarget().Character[FinalPart].Position + GetSilentAimTarget().Character[FinalPart].AssemblyLinearVelocity / GetProperty('SilentPrediction');
+               Args[2] = GetCharacter(GetSilentAimTarget())[FinalPart].Position + GetCharacter(GetSilentAimTarget())[FinalPart].AssemblyLinearVelocity / GetProperty('SilentPrediction');
 
                return OldNameCall(self, unpack(Args));
            end;
@@ -2387,9 +2562,9 @@ elseif (PlaceId == 142823291) then
                     end;
 
                     for Index, Value in next, Players:GetPlayers() do 
-                        if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) and (Value.Character:FindFirstChildOfClass('Humanoid')) then 
+                        if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid')) then 
 
-                            if (Player:DistanceFromCharacter(Value.Character:FindFirstChild('HumanoidRootPart').Position) > GetProperty('KillAuraDistance')) then 
+                            if (Player:DistanceFromCharacter(GetCharacter(Value):FindFirstChild('HumanoidRootPart').Position) > GetProperty('KillAuraDistance')) then 
                                 continue;
                             end;
 
@@ -2403,8 +2578,8 @@ elseif (PlaceId == 142823291) then
                             if (Character:FindFirstChildOfClass('Tool').Name == 'Knife') then 
                                 Stab();
                             elseif (Character:FindFirstChildOfClass('Tool').Name == 'Gun') then 
-                                local Velocity = Value.Character:FindFirstChild('HumanoidRootPart').AssemblyLinearVelocity / 50;
-                                Shoot(Value.Character:FindFirstChild('HumanoidRootPart').Position + Velocity);
+                                local Velocity = GetCharacter(Value):FindFirstChild('HumanoidRootPart').AssemblyLinearVelocity / 50;
+                                Shoot(GetCharacter(Value):FindFirstChild('HumanoidRootPart').Position + Velocity);
                             end;
                         end;
                     end;
@@ -2524,12 +2699,6 @@ elseif (PlaceId == 142823291) then
             end;
         end;
 
-
-        local function AA(angleX, angleY)
-            if (Character and RootPart) then
-                RootPart.CFrame = CFrame.new(RootPart.Position, RootPart.Position + Vector3.new(Camera.CFrame.lookVector.X, 0, Camera.CFrame.lookVector.Z)) * CFrame.Angles(math.rad(angleX), math.rad(angleY), 0);
-            end
-        end;
 
         local InfAmmo = GunMods:AddToggle('InfAmmo', {
             Text = 'Infinite Ammo';
@@ -2703,6 +2872,53 @@ elseif (PlaceId == 142823291) then
             Default = 0.7;
             Rounding = 3;
         });
+
+        local HighlightArms = CameraVisuals:AddToggle('HighlightArms', {
+            Text = 'Highlight Arms';
+        }):AddColorPicker('ArmOutline', {
+            Text = 'Outline Color';
+            Default = Color3.fromRGB(255, 255, 255);
+        }):AddColorPicker('ArmFill', {
+            Text = 'Fill Color';
+            Default = Color3.fromRGB(255, 255, 255);
+        }):OnChanged(function()
+            if (IsEnabled('HighlightArms')) and (Camera:FindFirstChild('Arms')) then 
+                local Highlight = Instance.new('Highlight', HighlightFolder);
+                Highlight.Name = 'ARMZ_$$$';
+                Highlight.Adornee = Camera:FindFirstChild('Arms');
+                Highlight.FillColor = GetProperty('ArmFill');
+                Highlight.OutlineColor = GetProperty('ArmOutline');
+                Highlight.OutlineTransparency = GetProperty('ArmFillOutTrans');
+                Highlight.FillTransparency = GetProperty('ArmFillTrans');
+                
+            elseif (HighlightFolder:FindFirstChild('ARMZ_$$$')) then 
+                HighlightFolder:FindFirstChild('ARMZ_$$$'):Destroy();
+            end;    
+        end);
+
+        local ArmsFillTrans = CameraVisuals:AddSlider('ArmFillOutTrans', {
+            Text = 'Outline Transparency';
+            Min = 0;
+            Max = 1;
+            Default = 0;
+            Rounding = 3;
+        }):OnChanged(function()
+            if (IsEnabled('HighlightArms')) and (HighlightFolder:FindFirstChild('ARMZ_$$$')) then 
+                HighlightFolder:FindFirstChild('ARMZ_$$$').OutlineTransparency = GetProperty('ArmFillOutTrans');
+            end;
+        end);
+
+        local ArmsFillTrans = CameraVisuals:AddSlider('ArmFillTrans', {
+            Text = 'Fill Transparency';
+            Min = 0;
+            Max = 1;
+            Default = 0;
+            Rounding = 3;
+        }):OnChanged(function()
+            if (IsEnabled('HighlightArms')) and (HighlightFolder:FindFirstChild('ARMZ_$$$')) then 
+                HighlightFolder:FindFirstChild('ARMZ_$$$').FillTransparency = GetProperty('ArmFillTrans');
+            end;
+        end);
 
         local EnableAA = AntiAim:AddToggle('EnableAA', {
             Text = 'Enable';
@@ -2923,9 +3139,9 @@ elseif (PlaceId == 142823291) then
         local function GetSilentAimTarget()
             for Index, Value in next, Players:GetPlayers() do 
 
-                if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HumanoidRootPart')) and (Value.Character:FindFirstChildOfClass('Humanoid'))  and (Value.Character:FindFirstChild(GetProperty('SilentBody'))) then
+                if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HumanoidRootPart')) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid'))  and (GetCharacter(Value.Character):FindFirstChild(GetProperty('SilentBody'))) and (Value.Team ~= Player.Team) then
 
-                      local worldPoint = Value.Character[GetProperty('SilentBody')].Position;
+                      local worldPoint = GetCharacter(Value):FindFirstChild(GetProperty('SilentBody')).Position;
                       local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
 
                       if (not onScreen) then 
@@ -2934,20 +3150,18 @@ elseif (PlaceId == 142823291) then
 
                       local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
     
-                      if (magnitude <= GetProperty('SilentFOV')) and (Value.Character ~= nil) and (onScreen) then 
-                          return Value.Character[GetProperty('SilentBody')];
+                      if (magnitude <= GetProperty('SilentFOV')) and (GetCharacter(Value) ~= nil) and (onScreen) then 
+                          return GetCharacter(Value)[GetProperty('SilentBody')];
                       end;
                 end;
             end;
         end;
-
-        local function getDirection(Origin, Position)
-            return (Position - Origin).Unit * 1000; -- // https://raw.githubusercontent.com/Averiias/Universal-SilentAim/main/main.lua
-        end;
-        
-
-
-
+    
+        shared.__XennyWare.Connections['CameraChild'] = Camera.ChildAdded:Connect(function(Object)
+            if (IsEnabled('HighlightArms')) and (Object.Name == 'Arms') and (HighlightFolder:FindFirstChild('ARMZ_$$$')) then 
+                HighlightFolder:FindFirstChild('ARMZ_$$$').Adornee = Object;
+            end;
+        end);
 
         OldNameCall = hookmetamethod(game, '__namecall', newcclosure(function(self, ...)
             local Args = { ... };
@@ -2969,14 +3183,9 @@ elseif (PlaceId == 142823291) then
             end;
 
             
-            if (IsEnabled('SilentAim')) and (Method:lower() == 'findpartonraywithignorelist') and (GetSilentAimTarget() ~= nil)  then 
-
-                local Closest = GetSilentAimTarget();
-
-                if (Closest ~= nil) then 
-                    Args[1] = Ray.new(Args[1].Origin, (Closest.Position - Args[1].Origin).Unit * 1000);
+            if (Method == 'FindPartOnRayWithIgnoreList') and (IsEnabled('SilentAim')) and (GetSilentAimTarget() ~= nil) and (self == workspace)  then 
+                    Args[1] = Ray.new(Camera.CFrame.Position, (GetSilentAimTarget().Position - Camera.CFrame.Position).Unit * 1000);
                     return OldNameCall(self, unpack(Args));
-                end;
             end;
 
             return OldNameCall(self, ...);
@@ -3068,14 +3277,19 @@ elseif (PlaceId == 142823291) then
                 Humanoid.HipHeight = GetProperty('HipHeight');
             end;
 
+            if (IsEnabled('HighlightArms')) and (HighlightFolder:FindFirstChild('ARMZ_$$$')) then 
+                HighlightFolder:FindFirstChild('ARMZ_$$$').FillColor = GetProperty('ArmFill');
+                HighlightFolder:FindFirstChild('ARMZ_$$$').OutlineColor = GetProperty('ArmOutline');
+            end;
+
             if (IsEnabled('Backtrack')) then 
                 for Index, Value in next, Players:GetPlayers() do 
-                    if (Value ~= Player) and (Value.Team ~= nil) and (Value.Team ~= Player.Team) and (Value.Character ~= nil) and (Value.Character:FindFirstChild('HeadHB')) then 
-                        local Clone = Instance.new('Part', Value.Character);
+                    if (Value ~= Player) and (Value.Team ~= nil) and (Value.Team ~= Player.Team) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChild('HeadHB')) then 
+                        local Clone = Instance.new('Part', GetCharacter(Value));
                         Clone.Color = GetProperty('BackColor');
                         Clone.Transparency = 0.5;
-                        Clone.Position = Value.Character:FindFirstChild('HeadHB').Position;
-                        Clone.Size = Value.Character:FindFirstChild('HeadHB').Size;
+                        Clone.Position = GetCharacter(Value):FindFirstChild('HeadHB').Position;
+                        Clone.Size = GetCharacter(Value):FindFirstChild('HeadHB').Size;
                         Clone.Material = 'ForceField';
                         Clone.Name = 'HeadHB';
                         Clone.Anchored = true;
@@ -3107,7 +3321,7 @@ elseif (PlaceId == 142823291) then
                     Camera:FindFirstChild('Arms'):FindFirstChild('Offset').Value = Vector3.new(GetProperty('ViewmodelX'), GetProperty('ViewmodelY'), GetProperty('ViewmodelZ'));
                 end;
 
-                if (IsEnabled('CustomArms')) then 
+                if (IsEnabled('CustomArms')) and (Camera:FindFirstChild('Arms')) and (Camera:FindFirstChild('Arms'):FindFirstChild('CSSArms')) then 
                     for Index, Value in next, Camera:FindFirstChild('Arms'):FindFirstChild('CSSArms'):GetChildren() do 
                         if (Value:IsA('Part')) then 
                             Value.Color = GetProperty('ArmColor');
@@ -3191,7 +3405,7 @@ elseif (PlaceId == 142823291) then
 
         local function Hit(Plr)
 
-            if (Plr == nil) or (Plr.Character == nil) or (not Plr.Character:FindFirstChild('Head')) then print'Check Failed'; return end;
+            if (Plr == nil) or (GetCharacter(Plr) == nil) or (not GetCharacter(Plr):FindFirstChild('Head')) then print'Check Failed'; return end;
 
             -- // found DA KILL REMOTE EZAZZZZZ (:scream:) (:cream:
 
@@ -3203,7 +3417,7 @@ elseif (PlaceId == 142823291) then
             local ohVector36 = Vector3.new(-2884.3603515625, 199.69235229492188, 395.09503173828125)
             local ohTable7 = {
                 [1] =  -2884.88916015625, 200.12826538085938, 384.3685302734375,
-                [2] = Plr.Character.Head,
+                [2] = GetCharacter(Plr).Head,
                 [3] =  -2885.21142578125, 200.39219665527344, 377.8313293457031,
                 [4] =  -0.9473804831504822, 0.24329611659049988, 0.20803231000900269,
                 [5] = 318,
@@ -3271,7 +3485,7 @@ elseif (PlaceId == 142823291) then
 
 
         local KillPlayer = PlayerBox:AddButton('Kill Player', function()
-            if (TargetPlayer ~= nil) and (TargetPlayer.Character ~= nil) and (TargetPlayer.Character:FindFirstChild('Head')) and (GetEquippedGun(Character) ~= nil) then 
+            if (TargetPlayer ~= nil) and (GetCharacter(TargetPlayer) ~= nil) and (GetCharacter(TargetPlayer):FindFirstChild('Head')) and (GetEquippedGun(Character) ~= nil) then 
                 Hit(TargetPlayer);
             end;
         end);
@@ -3287,9 +3501,9 @@ elseif (PlaceId == 142823291) then
         local function GetSilentAimTarget()
             for Index, Value in next, Players:GetPlayers() do 
 
-                if (Value ~= Player) and (Value.Character ~= nil) and (Value.Character:FindFirstChildOfClass('Humanoid'))  and (Value.Character:FindFirstChild(GetProperty('SilentBody'))) then
+                if (Value ~= Player) and (GetCharacter(Value) ~= nil) and (GetCharacter(Value):FindFirstChildOfClass('Humanoid'))  and (GetCharacter(Value):FindFirstChild(GetProperty('SilentBody'))) then
 
-                      local worldPoint = Value.Character:FindFirstChild(GetProperty('SilentBody')).Position;
+                      local worldPoint = GetCharacter(TargetPlayer):FindFirstChild(GetProperty('SilentBody')).Position;
                       local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
 
                       if (not onScreen) then 
@@ -3300,8 +3514,8 @@ elseif (PlaceId == 142823291) then
 
                       local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
     
-                      if (magnitude <= GetProperty('SilentFOV')) and (Value.Character ~= nil) and (onScreen) then 
-                          return Value.Character[GetProperty('SilentBody')];
+                      if (magnitude <= GetProperty('SilentFOV')) and (GetCharacter(Value) ~= nil) and (onScreen) then 
+                          return GetCharacter(Value)[GetProperty('SilentBody')];
                       end;
                 end;
             end;
@@ -3338,10 +3552,253 @@ elseif (PlaceId == 142823291) then
             SilentAimCircle.Position = WTS(Mouse.hit.p);
             SilentAimCircle.Thickness = 1;
 
-            if (IsEnabled('LoopKill')) and (TargetPlayer ~= nil) and (TargetPlayer.Character ~= nil) and (TargetPlayer.Character:FindFirstChild('Head')) then 
+            if (IsEnabled('LoopKill')) and (TargetPlayer ~= nil) and (GetCharacter(TargetPlayer) ~= nil) and (GetCharacter(TargetPlayer):FindFirstChild('Head')) then 
                 Hit(TargetPlayer);
             end;
         end);
+    elseif (game.PlaceId == 7113341058) then 
+        Create('Rush Point');
+        LoadUniversal();
+        
+        repeat task.wait() until ReplicatedStorage:FindFirstChild('BAC');
+
+        local Characters;
+        local ModuleLoader = require(ReplicatedStorage:WaitForChild('Modules').Shared.ModuleLoader);
+        local Network = ModuleLoader.LoadedModules.Network;
+        local Helpers = ReplicatedStorage.Modules.Client.Helpers
+        local CameraHandler = require(game.ReplicatedStorage:WaitForChild('Modules').Shared.ModuleLoader).LoadedModules.CameraModule;
+        local ModuleLoader = require(game:GetService("ReplicatedStorage").Modules.Shared.ModuleLoader);
+        local LoadedModules = ModuleLoader.LoadedModules;
+        local WeaponInfo = LoadedModules.WeaponInfo;
+
+
+        for Index, Value in next, getgc(true) do
+            if (type(Value) == 'function') and (islclosure(Value)) and (debug.getinfo(Value).name == 'NewChar') then
+                Characters = getupvalue(Value, 1); --> [1] = table [2] (real-chars) = table (in-game chars)
+            end;
+         end;
+
+        --local ResetRecoil = require(Helpers.RecoilHandler).ResetRecoil;
+        
+        local OldFire = Network.FireServer;
+
+        local SilentAim = TabB:AddTab('Silent Aim');
+        local GunMods = TabH:AddTab('Gun Mods');
+
+        SilentAim:AddToggle('SilentAim', {
+            Text = 'Enable';
+        });
+
+        SilentAim:AddDropdown('Silent_Body', {
+            Text = 'Body Part';
+            Default = 1;
+            AllowNull = true;
+            Multi = false;
+            Values = ListCharacterParts();
+        });
+
+        SilentAim:AddSlider('SilentFOV', {
+            Text = 'FOV';
+            Default = 150;
+            Min = 1;
+            Max = 400;
+            Rounding = 0.2;
+        });
+
+        SilentAim:AddSlider('SilentMaxDistance', {
+            Text = 'Max Distance';
+            Default = 1500;
+            Min = 1;
+            Max = 5000;
+            Rounding = 0.2
+        });
+
+        SilentAim:AddSlider('SilentHitChance', {
+            Text = 'Hit Chance';
+            Default = 100;
+            Min = 1;
+            Max = 100;
+            Rounding = 0.2
+        });
+
+        GunMods:AddToggle('NoRecoil', {
+            Text = 'No Recoil';
+        });
+
+        GunMods:AddToggle('NoSpread', {
+            Text = 'No Spread';
+        });
+
+        GunMods:AddToggle('NoCamShake', {
+            Text = 'No Cam Shake';
+        });
+
+        GetCharacter = function(Player)
+            return Characters[Player];
+        end;
+
+        Functions.GetTeam = function(Player)
+            return Player.SelectedTeam.Value;
+        end;
+
+        ESPLib.Overrides.GetTeam = function(Player)
+            return Players:GetPlayerFromCharacter(Player.Charcter):FindFirstChild('SelectedTeam').Value;
+        end;
+
+        ESPLib.Overrides.GetColor = function(Player)
+            if (Functions.GetTeam(Player) == 'Attackers') then 
+                return Color3.fromRGB(255, 0, 0);
+            elseif (Functions.GetTeam(Player) == 'Defenders') then 
+                return Color3.fromRGB(0, 0, 255);
+            else
+                return Color3.fromRGB(255, 255, 255);
+            end;
+        end;
+
+        ESPLib.Overrides.GetPlrFromChar = function(Player)
+            iif (Player.Character == nil) then return nil;
+            return Players:GetPlayerFromCharacter(Player.Character);
+        end;
+
+        -- // credits to xup
+
+        local function SetPlayerMeta(Player)
+            local playermeta = getrawmetatable(Player)
+		    local old = playermeta.__index
+		    setreadonly(playermeta, false)
+		    playermeta.__index = newcclosure(function(index, key)
+                if checkcaller() and key == "Character" then
+                    if (Characters[Player] ~= nil) then 
+                        return Characters[Player];
+                    else
+                        return nil;
+                    end;
+                end;
+
+                return old(index, key);
+            end);
+
+            setreadonly(playermeta, true)
+        end;
+
+        for Index, Value in next, Players:GetPlayers() do 
+            if (Value ~= Player) then SetPlayerMeta(Value) end;
+        end;
+
+        Players.PlayerAdded:Connect(SetPlayerMeta);
+
+
+        GetNearest = function()
+
+            S_Targets = {};
+
+            for Index, Value in next, Players:GetPlayers() do 
+                if (Value ~= Player) and (not Functions.GetTeam(Value) == Functions.GetTeam(Player)) then 
+
+                    local Char = Functions.GetCharacter(Value);
+
+                    if (not Char) then 
+                        return nil;
+                    end;
+
+                    local worldPoint = GetCharacter(Value):FindFirstChild(BodyPart.Value).Position;
+                    local vector, onScreen = Camera:WorldToScreenPoint(worldPoint);
+                    local magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).magnitude;
+                    local Distance = (Char.HumanoidRootPart.Position - Camera.CFrame.p).Magnitude;
+
+                    if (Char ~= nil) and (magnitude < GetProperty('SilentFOV')) and (Distance <= GetProperty('SilentMaxDistance')) then 
+                        table.insert(S_Targets, {Distance, Char[GetProperty('Silent_Body')]});
+                    end;
+                end;
+            end;
+
+            if (#S_Targets > 1) then 
+                table.sort(S_Targets, function(A, B)
+                    return A[1] < B[1];
+                end);
+            end;
+
+            if (#S_Targets == 0) then 
+                return nil;
+            end;
+
+            return S_Targets[1][2];
+        end;
+
+      --  local Old = require(Helpers.RecoilHandler).AddRecoil
+
+    -- // locate recoil func :money_mouth:
+
+    for Index, Value in next, getgc(true) do 
+        if (type(Value) == 'function') and (islclosure(Value)) and (#getupvalues(Value) == 5) and (type(getupvalue(Value, 4)) == 'table') and (rawget(getupvalue(Value, 4), 'LastAimPunchSpringX')) then 
+
+            local Old = Value;
+
+           hookfunction(Value, function(...) 
+                if (IsEnabled('NoRecoil')) then 
+                    return;
+                end;
+                
+                return Old(...)
+            end)
+        end;
+    end;
+        
+    -- // locate cam shake func :scream:
+
+    for Index, Value in next, getgc(true) do 
+        if (type(Value) == 'function') and (islclosure(Value) == true) and (#getconstants(Value) == 5)  and (getconstant(Value, 1) == 'TotalCameraX') and (getconstant(Value, 2) == 'TotalCameraY') and (getconstant(Value, 5) == 'LastCameraShakeTick') then 
+            Old = Value;
+    
+           hookfunction(Value, function(...) 
+            if (IsEnabled('NoCamShake')) then 
+                return end; return Old(...) end) 
+        end;
+    end;
+
+        Network.FireServer = function(...)
+
+            local Args = {...};
+
+            if (Args[2] == 'FireBullet') then 
+                
+                local Nearest = GetNearest();
+
+                if (Nearest == nil) then return OldFire(...) end;
+
+                local Modified = CFrame.new(Camera.CFrame['p'], Nearest.CFrame['p']);
+                Args[3][1].RotationMatrix = (Modified - Modified.p)
+                Args[3][1].OriginCFrame = Modified;
+
+                return OldFire(unpack(Args));
+            end;
+
+            return OldFire(...)
+        end;
+
+
+        RunService.RenderStepped:Connect(function()
+
+            -- // suck my nuts
+            
+            if (IsEnabled('Highlight')) then 
+                for _, __ in next, HighlightFolder:GetChildren() do 
+                    if (Characters[Players:FindFirstChild(__.Name)]) then 
+                        __.Adornee = Characters[Players:FindFirstChild(__.Name)]
+                    end;
+                end;
+            end;
+
+            while IsEnabled('NoSpread') do task.wait();
+                for Index, Value in next, WeaponInfo do
+                    if (type(Value) == 'table') then
+                        Value['Spread'] = 0;
+                        Value['MovementSpreadTime'] = 0;
+                        Value['MovementSpreadPenalty'] = 0;
+                    end;
+                end;
+             end;
+        end)
 
 else -- // Universal
 
