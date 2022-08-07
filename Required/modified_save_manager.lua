@@ -1,6 +1,4 @@
--- All credits go to wally, all i did was add multi game support
-
-repeat task.wait() until shared.__XennyWare ~= nil and shared.__XennyWare.Values ~= nil;
+repeat task.wait() until shared.__XennyWare ~= nil;
 
 local httpService = game:GetService('HttpService')
 
@@ -57,18 +55,7 @@ local SaveManager = {} do
 					Options[idx]:SetValue({ data.key, data.mode })
 				end
 			end,
-		},
-
-		Input = {
-			Save = function(idx, object)
-				return { type = 'Input', idx = idx, text = object.Value }
-			end,
-			Load = function(idx, data)
-				if Options[idx] and type(data.text) == 'string' then
-					Options[idx]:SetValue(data.text)
-				end
-			end,
-		},
+		}
 	}
 
 	function SaveManager:SetIgnoreIndexes(list)
@@ -83,7 +70,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Save(name)
-		local fullPath = self.Folder .. '/Settings/' ..  game.PlaceId .. '/' .. name .. '.json'
+		local fullPath = self.Folder .. '/settings/' .. game.PlaceId .. name .. '.json'
 
 		local data = {
 			objects = {}
@@ -112,7 +99,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Load(name)
-		local file = self.Folder .. '/Settings/' ..  game.PlaceId .. '/'  .. name .. '.json'
+		local file = self.Folder .. '/settings/' .. game.PlaceId .. name .. '.json'
 		if not isfile(file) then return false, 'invalid file' end
 
 		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
@@ -137,9 +124,8 @@ local SaveManager = {} do
 	function SaveManager:BuildFolderTree()
 		local paths = {
 			self.Folder,
-			self.Folder .. '/Themes',
-			self.Folder .. '/Settings',
-            self.Folder .. '/Settings/' .. tostring(game.PlaceId),
+			self.Folder .. '/themes',
+			self.Folder .. '/settings' .. game.PlaceId;
 		}
 
 		for i = 1, #paths do
@@ -151,7 +137,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:RefreshConfigList()
-		local list = listfiles(self.Folder .. '/Settings/' .. game.PlaceId .. '/')
+		local list = listfiles(self.Folder .. '/settings' .. game.PlaceId)
 
 		local out = {}
 		for i = 1, #list do
@@ -182,8 +168,8 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:LoadAutoloadConfig()
-		if isfile(self.Folder .. '/Settings/autoload.txt') then
-			local name = readfile(self.Folder .. '/Settings/autoload.txt')
+		if isfile(self.Folder .. '/settings/'  .. game.PlaceId .. 'autoload.txt') then
+			local name = readfile(self.Folder .. '/settings/' .. game.PlaceId .. 'autoload.txt')
 
 			local success, err = self:Load(name)
 			if not success then
@@ -202,7 +188,7 @@ local SaveManager = {} do
 
 		section:AddDropdown('SaveManager_ConfigList', { Text = 'Config list', Values = self:RefreshConfigList(), AllowNull = true })
 		section:AddInput('SaveManager_ConfigName',    { Text = 'Config name' })
-		
+
 		section:AddDivider()
 
 		section:AddButton('Create config', function()
@@ -230,41 +216,8 @@ local SaveManager = {} do
 				return self.Library:Notify('Failed to load config: ' .. err)
 			end
 
-			if (not shared.__XennyWare.Values.AutoSave) then 
-				self.Library:Notify(string.format('Loaded config %q', name));
-			end;
+			self.Library:Notify(string.format('Loaded config %q', name))
 		end)
-
-		section:AddButton('Overwrite config', function()
-			local name = Options.SaveManager_ConfigList.Value
-
-			local success, err = self:Save(name)
-			if not success then
-				return self.Library:Notify('Failed to overwrite config: ' .. err)
-			end
-
-			self.Library:Notify(string.format('Overwrote config %q', name))
-		end)
-		
-		section:AddButton('Autoload config', function()
-			local name = Options.SaveManager_ConfigList.Value
-			writefile(self.Folder .. '/Settings/autoload.txt', name)
-			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
-			self.Library:Notify(string.format('Set %q to auto load', name))
-		end)
-
-		section:AddButton('Refresh config list', function()
-			Options.SaveManager_ConfigList.Values = self:RefreshConfigList()
-			Options.SaveManager_ConfigList:SetValues()
-			Options.SaveManager_ConfigList:SetValue(nil)
-		end)
-
-		section:AddButton('Delete current auto-load', function()
-			if (isfile(self.Folder .. '/Settings/autoload.txt')) then 
-				delfile(self.Folder .. '/Settings/autoload.txt');
-				self.Library:Notify('Successfully deleted auto-load config');
-			end;
-		end);
 
 		section:AddToggle('AutoSave', {
 			Text = 'Auto Save Config';
@@ -282,10 +235,35 @@ local SaveManager = {} do
 			shared.__XennyWare.Values.AutoSaveDelay = Options.AutoSaveDelay.Value;
 		end);
 
+		section:AddButton('Overwrite config', function()
+			local name = Options.SaveManager_ConfigList.Value
+
+			local success, err = self:Save(name)
+			if not success then
+				return self.Library:Notify('Failed to overwrite config: ' .. err)
+			end
+
+			self.Library:Notify(string.format('Overwrote config %q', name))
+		end)
+		
+		section:AddButton('Autoload config', function()
+			local name = Options.SaveManager_ConfigList.Value
+			writefile(self.Folder .. '/settings/' .. game.PlaceId .. 'autoload.txt', name)
+			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
+			self.Library:Notify(string.format('Set %q to auto load', name))
+		end)
+
+		section:AddButton('Refresh config list', function()
+			Options.SaveManager_ConfigList.Values = self:RefreshConfigList()
+			Options.SaveManager_ConfigList:SetValues()
+			Options.SaveManager_ConfigList:SetValue(nil)
+		end)
+
+
 		SaveManager.AutoloadLabel = section:AddLabel('Current autoload config: none', true)
 
-		if isfile(self.Folder .. '/Settings/autoload.txt') then
-			local name = readfile(self.Folder .. '/Settings/autoload.txt')
+		if isfile(self.Folder .. '/settings/' .. game.PlaceId 'autoload.txt') then
+			local name = readfile(self.Folder .. '/settings/' .. game.PlaceId 'autoload.txt')
 			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
 		end
 

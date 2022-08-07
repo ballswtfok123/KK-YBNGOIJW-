@@ -3525,8 +3525,22 @@ elseif (PlaceId == 142823291) then
 
         local Characters;
         local Helpers = ReplicatedStorage.Modules.Client.Helpers
+        local Skins = game:GetService("ReplicatedStorage"):WaitForChild('Modules'):WaitForChild('Shared'):WaitForChild('SkinData');
+        local SkinData = {};
+        local Weapons = {};
+        local SkinsNames = {};
+        
+        for Index, Value in next, Skins:GetChildren() do 
+            if (not Value:IsA('ModuleScript')) then continue end;
+            Weapons[Value.Name] = Value.Name;
+            SkinData[Value.Name] = {['Skins'] = require(Value); ['Current'] = ''; ['Name'] = Value.Name};
+            SkinsNames[Value.Name] = {};
 
-      
+            for _, __ in next, require(Value) do 
+                table.insert(SkinsNames[Value.Name], _);
+            end;
+        end;
+
         for Index, Value in next, getgc(true) do
             if (type(Value) == 'function') and (islclosure(Value)) and (debug.getinfo(Value).name == 'NewChar') then
                 Characters = getupvalue(Value, 1); --> [1] = table [2] (real-chars) = table (in-game chars)
@@ -3554,6 +3568,8 @@ elseif (PlaceId == 142823291) then
         local SilentAim = TabB:AddTab('Silent Aim');
         local GunMods = TabH:AddTab('Gun Mods');
         local Viewmodel = Visuals:AddRightGroupbox('Viewmodel');
+        local SkinMods = Misc:AddLeftGroupbox('Skins');
+        local GameFuncs = Misc:AddRightGroupbox('Game Funcs');
 
         SilentAim:AddToggle('SilentAim', {
             Text = 'Enable';
@@ -3607,6 +3623,14 @@ elseif (PlaceId == 142823291) then
             Text = 'No Cam Shake';
         });
 
+        GunMods:AddToggle('FastFire', {
+            Text = 'Fast Fire Rate';
+        });
+
+        GunMods:AddToggle('AlwaysAuto', {
+            Text = 'Always Auto';
+        });
+
         Viewmodel:AddToggle('CustomArms', {
             Text = 'Custom Arms';
         }):AddColorPicker('ArmColor', {
@@ -3649,9 +3673,61 @@ elseif (PlaceId == 142823291) then
             Default = 0;
         });
 
-        ViewModel:AddToggle('CustomOffset', {
+        Viewmodel:AddToggle('CustomOffset', {
             Text = 'Offset';
         });
+
+        Viewmodel:AddSlider('OffsetX', {
+            Text = 'X';
+            Min = -50;
+            Max = 50;
+            Default = 1;
+            Rounding = 0.2;
+        });
+
+        Viewmodel:AddSlider('OffsetY', {
+            Text = 'Y';
+            Min = -50;
+            Max = 50;
+            Default = 1;
+            Rounding = 0.2;
+        });
+
+        Viewmodel:AddSlider('OffsetZ', {
+            Text = 'Z';
+            Min = -50;
+            Max = 50;
+            Default = 1;
+            Rounding = 0.2;
+        });
+
+        GameFuncs:AddToggle('AntiSpectate', {
+            Text = 'AntiSpectate';
+        });
+
+        SkinMods:AddToggle('SkinChanger', {
+            Text = 'Skin Changer';
+        });
+
+
+        SkinMods:AddDropdown('Skin', {
+            Text = 'Skin';
+            Values = {};
+            AllowNull = true;
+        }):OnChanged(function()
+            if (GetProperty('SkinWeapon') == nil) then return end;
+            SkinData[GetProperty('SkinWeapon')].Current = GetProperty('Skin');
+        end);
+
+        SkinMods:AddDropdown('SkinWeapon', {
+            Text = 'Weapon';
+            Values = Weapons;
+        }):OnChanged(function()
+            if (GetProperty('SkinWeapon') == nil) then return end;
+            Options['Skin'].Values = SkinsNames[GetProperty('SkinWeapon')];
+            Options['Skin']:SetValues();
+            Options['Skin']:SetValue(nil);
+        end);
 
         GetCharacter = function(Player)
             return Characters[Player];
@@ -3673,10 +3749,25 @@ elseif (PlaceId == 142823291) then
         ModuleLoader = require(game:GetService("ReplicatedStorage").Modules.Shared.ModuleLoader);
         LoadedModules = ModuleLoader.LoadedModules;
         local WeaponInfo = LoadedModules.WeaponInfo;
-        
+        local Memory = LoadedModules.SharedMemory;
         Network = LoadedModules.Network;
         local Old = Network.FireServer;
-        
+        local OldIndex;
+
+        local OldGet = LoadedModules.AttributesHandler.GetWeapon;
+        hookfunction(LoadedModules.AttributesHandler.GetWeapon, function(p7, p8, p9)
+
+            if (IsEnabled('SkinChanger')) and (GetProperty('Skin') ~= nil) then     
+                local SkinName = SkinData[p8].Current;
+
+                if (SkinName == nil) or (SkinName == '') then print'skin is nil'; return ReplicatedStorage.Assets.Weapons[p8].Default end;
+
+                ReplicatedStorage.Assets.Weapons[p8][SkinName];
+            else
+                return ReplicatedStorage.Assets.Weapons[p8].Default;
+            end;
+        end);
+
         --print(Old, Network.FireSever);
         
         --table.foreach(LoadedModules, print);
@@ -3722,9 +3813,15 @@ elseif (PlaceId == 142823291) then
         end;
         
        
+
+
         Network.FireServer = function(...)
            local Args = {...};
             
+            if (Args[2] == 'UpdateCamera') and (IsEnabled('AntiSpectate')) then 
+                return 
+            end;
+
             if IsEnabled('SilentAim') and (Args[2] == 'FireBullet') then
         
                local Nearest = GetNearest()
@@ -3741,8 +3838,7 @@ elseif (PlaceId == 142823291) then
                Args[3][1].OriginCFrame = ResolvedRotation;
                Args[3][1].RotationMatrix = ResolvedRotation - ResolvedRotation['p'];
         
-               return Old(unpack(Args));
-         
+               Old(unpack(Args));
            end;
         
            return Old(...);
@@ -3772,26 +3868,24 @@ elseif (PlaceId == 142823291) then
 
                     if (IsEnabled('NoRecoil')) and (rawget(Value, 'Recoil')) and (Value.Recoil[1] ~= nil) then 
                         Value.RecoilResetTime = 0;
-                         Value.Recoil[1].X = 0;
-                         Value.Recoil[1].Y = 0;
+                         for _, __ in next, Value.Recoil do 
+                             __.X = 0;
+                             __.Y = 0;
+                         end;
                     end;
 
-                    if (IsEnabled('NoCamShake')) then 
-                        Value.Shake = 0;
-                        Value['CameraBeginMultiplier'] = 0;
-                        Value['CameraResetTime'] = 0;
-                        Value['CameraReturnMultiplier'] = 0;
-                        Value.K = 0;
-                        Value.D = 0;
-                        Value.X = 0;
+                    if (IsEnabled('FastFire')) then 
+                        Value.FireRate = 0;
+                    end;
 
-                        if (rawget(Value, 'Kickback')) then 
-                            Value.Kickback.X = 0;
-                            Value.Kickback.Y = 0;
-                            Value.Kickback.Z = 0;
-                        end;
+                    if (IsEnabled('AlwaysAuto')) then 
+                        Value.FireType = 'Automatic';
                     end;
                 end;
+            end;
+
+            if (IsEnabled('CustomOffset')) and (Camera:FindFirstChild('Weapon')) and (Camera:FindFirstChild('Weapon'):FindFirstChild('Offset')) then 
+                Camera:FindFirstChild('Weapon'):FindFirstChild('Offset').Value = Vector3.new(GetProperty('OffsetX'), GetProperty('OffsetY'), GetProperty('OffsetZ'))
             end;
 
             if (IsEnabled('CustomArms')) or (IsEnabled('CustomGun')) then 
@@ -3834,6 +3928,15 @@ elseif (PlaceId == 142823291) then
             end;
         end)
         
+        OldIndex = hookmetamethod(game, '__index', newcclosure(function(self, Index, Value)
+            
+            if (Index == 'CameraShakeMultiplier') and (IsEnabled('NoCamShake')) then 
+                return OldIndex(self, Index, 0);
+            end;
+
+            return OldIndex(self, Index, Value);
+        end));
+
     elseif (game.PlaceId == 2474168535) then 
         Create('Westbound');
         LoadUniversal();
