@@ -9,7 +9,7 @@ local RenderStepped = RunService.RenderStepped;
 local LocalPlayer = game:GetService('Players').LocalPlayer;
 local Mouse = LocalPlayer:GetMouse();
 
-local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
+local ProtectGui = protectgui or (syn and gethui) or (function() end);
 
 local ScreenGui = Instance.new('ScreenGui');
 ProtectGui(ScreenGui);
@@ -2371,7 +2371,7 @@ function Library:CreateWindow(...)
     if type(Config.Title) ~= 'string' then Config.Title = 'No title' end
     
     if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
-    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(550, 785) end -- // lol gg ez didnt ask i am going insane
+    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(550, 795) end -- // lol gg ez didnt ask i am going insane
 
     if Config.Center then
         Config.AnchorPoint = Vector2.new(0.5, 0.5)

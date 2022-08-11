@@ -1,5 +1,6 @@
 --[[
     made by siper#9938, credits to spoorloos/mickey.#5612 for bounding box/out of view arrows
+    modified by xenny to add custom instances
 ]]
 
 -- Module
@@ -8,9 +9,11 @@ local EspLibrary = {
     instances = {},
     espCache = {},
     chamsCache = {},
+    ObjectCache = {},
     conns = {},
     whitelist = {}, -- insert string that is the player's name you want to whitelist (turns esp color to whitelistColor in options)
     blacklist = {}, -- insert string that is the player's name you want to blacklist (removes player from esp)
+    checks = {};
     options = {
         enabled = true,
         scaleFactorX = 4,
@@ -63,7 +66,7 @@ local EspLibrary = {
         chamsFillColor = Color3.new(1, 0, 0),
         chamsFillTransparency = 0.5,
         chamsOutlineColor = Color3.new(),
-        chamsOutlineTransparency = 0.
+        chamsOutlineTransparency = 0,
 		chamsTeamCheck = false;
     },
 }
@@ -155,6 +158,7 @@ function EspLibrary.GetHealth(player, character)
 
     return 100, 100
 end
+
 
 function EspLibrary.VisibleCheck(character, position)
     local origin = currentCamera.CFrame.Position
@@ -257,6 +261,74 @@ function EspLibrary.RemoveChams(player)
         highlight:Destroy()
     end
 end
+
+function EspLibrary.AddToObject(Object, Settings)
+    if (not type(Object) == 'Instance') then return warn'object must be an instance' end;
+    if (not type(Settings) == 'table') then Settings = {
+        ['Box'] = true;
+        ['BoxFill'] = false;
+        ['Name'] = true;
+        ['BoxOutline'] = true;
+        ['IsEnabled'] = Object.Name;
+        ['Color'] = Color3.fromRGB(255, 255, 255);
+    }; end; 
+    
+    EspLibrary.checks[Settings.IsEnabled] = true;
+
+    if (Settings['BoxFill'] == nil) then Settings['BoxFill'] = false end;
+    if (Settings['BoxOutline'] == nil) then Settings['BoxFill'] = false end;
+    if (Settings['Box'] == nil) then Settings['Box'] = false end;
+    if (Settings['Name'] == nil) then Settings['Name'] = false end;
+    if (Settings['Distance'] == nil) then Settings['Distance'] = false end;
+    if (Settings['Color'] == nil) then Settings['Color'] = Color3.fromRGB(255, 255, 255) end;
+
+    local PartToReturn = Object:IsA('Model') and Object:FindFirstChildOfClass('Part') or (Object:IsA('Model')) and Object:FindFirstChildOfClass('BasePart') or (Object:IsA('Model')) and (Obejct.PrimaryPart ~= nil) and (Object.PrimaryPart) or Object;
+    local objects = {
+        top = create("Text", {
+            Center = true,
+            Size = 13,
+            Outline = true,
+            OutlineColor = color3New(),
+            Font = 2,
+        }),
+        bottom = create("Text", { -- // name
+            Center = true,
+            Size = 13,
+            Outline = true,
+            OutlineColor = color3New(),
+            Font = 2,
+        }),
+        boxFill = create("Square", { 
+            Thickness = 1,
+            Filled = true,
+        }),
+        box = create("Square", {
+            Thickness = 1
+        }),
+    };
+
+    EspLibrary.ObjectCache[PartToReturn] = {['objects'] = objects, ['Settings'] = Settings, ['Name'] = Object.Name};
+
+    insert(EspLibrary.conns, PartToReturn.AncestryChanged:Connect(function(_, Parent)
+        if (Parent == nil) then 
+            for Index, Value in next, objects do 
+                Value:Remove();
+            end;
+            EspLibrary.ObjectCache[PartToReturn] = nil;
+        end;
+    end));
+
+    insert(EspLibrary.conns, PartToReturn:GetPropertyChangedSignal('Parent'):Connect(function()
+        if (PartToReturn.Parent == nil) then 
+            for Index, Value in next, objects do 
+                Value:Remove();
+            end;
+            EspLibrary.ObjectCache[PartToReturn] = nil;
+        end;
+    end));
+
+    return EspLibrary.ObjectCache[PartToReturn];
+end;
 
 function EspLibrary.Unload()
     for _, connection in next, EspLibrary.conns do
@@ -464,10 +536,6 @@ function EspLibrary.Init()
                     canShow = false
                 end
 
-				if (EspLibrary.chamsTeamCheck) and (team == EspLibrary.GetTeam(game.Players.LocalPlayer)) then 
-					canShow = false;
-				end;
-
                 highlight.Enabled = canShow
                 highlight.DepthMode = EspLibrary.options.visibleOnly and Enum.HighlightDepthMode.Occluded or Enum.HighlightDepthMode.AlwaysOnTop
                 highlight.Adornee = character
@@ -477,7 +545,58 @@ function EspLibrary.Init()
                 highlight.OutlineTransparency = EspLibrary.options.chamsOutlineTransparency
             end
         end
+
+        for _, tbl in next, EspLibrary.ObjectCache do 
+
+            if (_ == nil) then return end;
+
+            local Settings = tbl.Settings or {};
+            local objects = tbl.objects or {};
+            local Object = _; if (not Object) then return end;
+            local Name = tbl.Name or Object.Name;
+
+            local onScreen, size, position, torsoPosition = EspLibrary.GetBoundingBox(Object)
+            local distance = (currentCamera.CFrame.Position - Object.Position).Magnitude
+            local canShow, enabled = onScreen and (size and position), EspLibrary.options.enabled
+
+            if (not Settings['Enabled']) then canShow = false end;
+
+            if (Settings['IsEnabled'] == nil) then Settings['IsEnabled'] = 'ESP' end;
+
+            if (Settings['IsEnabled'] ~= nil) and (EspLibrary.checks[Settings.IsEnabled] ~= true) then 
+                canShow = false;
+            end;
+
+            objects.top.Font = EspLibrary.options.font
+            objects.top.Size = EspLibrary.options.fontSize
+            objects.top.Transparency = EspLibrary.options.nameTransparency
+            objects.top.Color = Settings['Color'];
+            objects.top.Text = Name;
+            objects.top.Position = round(position + vector2New(size.X * 0.5, -(objects.top.TextBounds.Y + 2)))
+            objects.top.Visible = canShow and Settings['Name'];
+
+            objects.bottom.Visible = canShow and Settings['Distance'];
+            objects.bottom.Font = EspLibrary.options.font
+            objects.bottom.Size = EspLibrary.options.fontSize
+            objects.bottom.Transparency = EspLibrary.options.distanceTransparency
+            objects.bottom.Color = Settings['Color'];
+            objects.bottom.Text = tostring(round(distance)) .. EspLibrary.options.distanceSuffix
+            objects.bottom.Position = round(position + vector2New(size.X * 0.5, size.Y + 1))
+
+            
+            objects.box.Visible = canShow and Settings['Box'];
+            objects.box.Color = Settings['Color'];
+            objects.box.Transparency = EspLibrary.options.boxesTransparency
+            objects.box.Size = size
+            objects.box.Position = position
+
+            objects.boxFill.Visible = canShow and Settings['BoxFill'];
+            objects.boxFill.Color = Settings['Color'];
+            objects.boxFill.Transparency = EspLibrary.options.boxFillTransparency
+            objects.boxFill.Size = size
+            objects.boxFill.Position = position
+        end;
     end)
 end
 
-return EspLibrary
+return EspLibrary;

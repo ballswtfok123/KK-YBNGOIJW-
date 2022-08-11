@@ -1,4 +1,3 @@
-local LocalizationService = game:GetService("LocalizationService")
 --[[
     Xenny-Ware Rewrite Started 6/5/2022
 
@@ -151,8 +150,7 @@ shared.__XennyWare.Note = 'Hello person printing shared (or looking at the src),
 local Library = loadfile('Xenny-Ware/Required/Library.lua')(); -- // Credits to inori
 local SaveManager = loadfile('Xenny-Ware/Required/SaveManager.lua')(); -- // Credits to wally for this
 local ThemeManager = loadfile('Xenny-Ware/Required/ThemeManager.lua')() -- // Credits to wally for this
-local Maid = loadfile('Xenny-Ware/Required/Maid.lua')(); -- // Credit to quenty
-local ESPLib = loadfile('Xenny-Ware/Required/ESP.lua')(); -- // Credit to kiriot22
+local ESPLib = loadfile('Xenny-Ware/Required/ESP.lua')(); -- // Credits to siper
 
 ESPLib.Init();
 
@@ -1259,6 +1257,10 @@ local function LoadUniversal(LoadRage, UseDefault)
 
     local ThirdPerson = Render:AddToggle('ThirdPerson', {
         Text = 'Third Person'
+    }):AddKeyPicker('TP', {
+        SyncToggleState = true;
+        Text = '';
+        Default = 'NONE';
     });
 
     local ThirdPersonDistance = Render:AddSlider('ThirdPersonDistance', {
@@ -1307,6 +1309,12 @@ local function LoadUniversal(LoadRage, UseDefault)
         Text = 'Enable';
     }):OnChanged(function()
         ESPLib.options.enabled = IsEnabled('EnableESP');
+    end);
+
+    ESP:AddToggle('VisOnly', {
+        Text = 'Visible Only';
+    }):OnChanged(function()
+        ESPLib.options.visibleOnly = IsEnabled('VisOnly');
     end);
 
     local Boxes = ESP:AddToggle('Boxes', {
@@ -1825,8 +1833,10 @@ local function LoadUniversal(LoadRage, UseDefault)
         if idx == "JumpPower" and not checkcaller() and IsEnabled('CustomJumpPower') or idx == "JumpPower" and not checkcaller() and (IsKeyDown('CustJP')) then
             return oldNewIndex(t, idx, IsEnabled('CustomJumpPower'));
         end;
-        if (idx == 'CameraMode' and not checkcaller() and IsEnabled('ThirdPerson')) then
-            return oldNewIndex(t, idx, 'Classic');
+        if (idx == 'CameraMode' and not checkcaller()) then
+            if (IsEnabled('ThirdPerson')) or (Options.TP:GetState() == true) then 
+                return oldNewIndex(t, idx, 'Classic');
+            end;
         end;
         if (idx == 'FieldOfView' and not checkcaller()) then
             return oldNewIndex(t, idx, CamFOV.Value);
@@ -3518,17 +3528,36 @@ elseif (PlaceId == 142823291) then
             end;
         end);
     elseif (game.PlaceId == 7113341058) then 
-        Create('Rush Point');
+        Create('Rush Point', true);
         LoadUniversal();
         
-        repeat task.wait() until ReplicatedStorage:FindFirstChild('BAC');
+        repeat task.wait() until ReplicatedStorage:FindFirstChild('BAC') and ReplicatedStorage:FindFirstChild('Modules');
 
         local Characters;
         local Helpers = ReplicatedStorage.Modules.Client.Helpers
         local Skins = game:GetService("ReplicatedStorage"):WaitForChild('Modules'):WaitForChild('Shared'):WaitForChild('SkinData');
+        local WeaponInfo = require(game:GetService("ReplicatedStorage").Modules.Shared.WeaponInfo);
         local SkinData = {};
         local Weapons = {};
         local SkinsNames = {};
+        local SlotOne = {};
+        local SlotTwo = {};
+        local SlotThree = {};
+        local GameChars = {};
+
+        ModuleLoader = require(game:GetService("ReplicatedStorage").Modules.Shared.ModuleLoader);
+        LoadedModules = ModuleLoader.LoadedModules;
+        local WeaponInfo = LoadedModules.WeaponInfo;
+        local Memory = LoadedModules.SharedMemory;
+        Network = LoadedModules.Network;
+        local Old = Network.FireServer;
+        local OldIndex;
+        local OldGet = LoadedModules.AttributesHandler.GetWeapon;
+
+        local DroppedWeapons = workspace:WaitForChild('DroppedWeapons');
+        local OldPenetration = LoadedModules.PenetrationInfo;
+
+        local GameStats = workspace:WaitForChild('MapFolder'):WaitForChild('GameStats');
         
         for Index, Value in next, Skins:GetChildren() do 
             if (not Value:IsA('ModuleScript')) then continue end;
@@ -3539,6 +3568,24 @@ elseif (PlaceId == 142823291) then
             for _, __ in next, require(Value) do 
                 table.insert(SkinsNames[Value.Name], _);
             end;
+        end;
+
+        for Index, Value in next, WeaponInfo do 
+            if (Value.Slot == 'Primary') then 
+                table.insert(SlotOne, Index);
+            end;
+
+            if (Value.Slot == 'Secondary') then 
+                table.insert(SlotTwo, Index);
+            end;
+
+            if (Value.Slot == 'Armor') or (Value.Slot == 'Lethal Utility') then 
+                table.insert(SlotThree, Index);
+            end;
+        end;
+
+        for Index, Value in next, ReplicatedStorage:WaitForChild('Characters'):GetChildren() do 
+            GameChars[Value.Name] = Value.Name;
         end;
 
         for Index, Value in next, getgc(true) do
@@ -3559,6 +3606,9 @@ elseif (PlaceId == 142823291) then
             return Characters[Player], Characters[Player]:FindFirstChild('HumanoidRootPart');
         end;
         
+        Functions.GetCharacter = ESPLib.GetCharacter;
+        GetCharacter = ESPLib.GetCharacter;
+
         local SilentAimCircle = Drawing.new('Circle');
         SilentAimCircle.Radius = 150;
         SilentAimCircle.Visible = false;
@@ -3570,6 +3620,8 @@ elseif (PlaceId == 142823291) then
         local Viewmodel = Visuals:AddRightGroupbox('Viewmodel');
         local SkinMods = Misc:AddLeftGroupbox('Skins');
         local GameFuncs = Misc:AddRightGroupbox('Game Funcs');
+
+        local CharParts = {'Head'; 'UperTorso'; 'HumanoidRootPart'};
 
         SilentAim:AddToggle('SilentAim', {
             Text = 'Enable';
@@ -3583,7 +3635,7 @@ elseif (PlaceId == 142823291) then
             Default = 1;
             AllowNull = true;
             Multi = false;
-            Values = {'Head'; 'UpperTorso'; 'HumanoidRootPart'};
+            Values = {'Head'; 'UpperTorso'; 'HumanoidRootPart'; 'Random'};
             Default = 1;
         });
 
@@ -3621,15 +3673,42 @@ elseif (PlaceId == 142823291) then
 
         GunMods:AddToggle('NoCamShake', {
             Text = 'No Cam Shake';
+        }):OnChanged(function()
+            if (IsEnabled('NoCamShake')) then 
+                for Index, Value in next, game:GetDescendants() do 
+                    if (Value.Name == 'CameraShakeMultiplier') then Value:Destroy() end;
+                end;
+            end;
+        end);
+
+        
+        GunMods:AddToggle('FastFire', {
+            Text = 'Custom Fire Rate';
         });
 
-        GunMods:AddToggle('FastFire', {
-            Text = 'Fast Fire Rate';
+        GunMods:AddSlider('FireRate', {
+            Text = 'Fire Rate';
+            Min = 0;
+            Max = 2;
+            Rounding = 3;
+            Default = 1;
         });
 
         GunMods:AddToggle('AlwaysAuto', {
             Text = 'Always Auto';
         });
+
+        GunMods:AddToggle('ExtendedPenetration', {
+            Text = 'Extended Penetration';
+        }):OnChanged(function()
+            if (IsEnabled('ExtendedPenetration')) then 
+                for Index, Value in next, LoadedModules.PenetrationInfo do 
+                    Value = 'High';
+                end;
+            else
+                LoadedModules.PenetrationInfo = OldPenetration;
+            end;
+        end);
 
         Viewmodel:AddToggle('CustomArms', {
             Text = 'Custom Arms';
@@ -3702,7 +3781,7 @@ elseif (PlaceId == 142823291) then
         });
 
         GameFuncs:AddToggle('AntiSpectate', {
-            Text = 'AntiSpectate';
+            Text = 'Anti Spectate';
         });
 
         SkinMods:AddToggle('SkinChanger', {
@@ -3729,9 +3808,206 @@ elseif (PlaceId == 142823291) then
             Options['Skin']:SetValue(nil);
         end);
 
+        GameFuncs:AddDivider();
+
+        GameFuncs:AddToggle('AutoBuy', {
+            Text = 'Auto Buy';
+        });
+
+        GameFuncs:AddSlider('AutoBuyDelay', {
+            Text = 'Delay';
+            Min = 1;
+            Max = 10;
+            Default = 5;
+            Rounding = 2;
+        });
+
+        GameFuncs:AddToggle('BuySlot1', {
+            Text = 'Buy Slot 1';
+        });
+
+        GameFuncs:AddDropdown('Slot_1', {
+            Text = 'Slot 1';
+            Values = SlotOne;
+            AllowNull = true;
+        });
+
+        GameFuncs:AddToggle('BuySlot2', {
+            Text = 'Buy Slot 2';
+        });
+
+        GameFuncs:AddDropdown('Slot_2', {
+            Text = 'Slot 2';
+            Values = SlotTwo; 
+            AllowNull = true;
+        });
+
+        GameFuncs:AddToggle('BuySlot3', {
+            Text = 'Buy Slot 3';
+        });
+
+        GameFuncs:AddDropdown('Slot_3', {
+            Text = 'Slot 3';
+            Values = SlotThree;
+            Multi = true; 
+            AllowNull = true;
+        });
+
+        GameFuncs:AddDivider();
+        
+        GameFuncs:AddToggle('AutoLockIn', {
+            Text = 'Auto Lock In';
+        });
+
+        GameFuncs:AddDropdown('GameChar', {
+            Text = 'Character';
+            Values = GameChars;
+            AllowNull = true;
+        });
+
+        GameFuncs:AddDivider();
+        
+        LocalBox:AddToggle('Bhop', {
+            Text = 'Bhop';
+        });
+
+        World:AddDivider();
+
+        World:AddToggle('wep', {
+            Text = 'Dropped Weapon ESP';
+        }):AddColorPicker('wep_clr', {
+            Text = 'clr';
+            Default = Color3.fromRGB(255, 255, 255);
+        }):OnChanged(function()
+            ESPLib.checks.wep = IsEnabled('wep');
+        end);
+
+        World:AddToggle('BombEsp', {
+            Text = 'Bomb ESP';
+        }):AddColorPicker('Bomb_color', {
+            Text = 'clr';
+            Default = Color3.fromRGB(255, 255, 255);
+        }):OnChanged(function()
+            ESPLib.checks.bomb = IsEnabled('BombEsp');
+        end);
+
+        World:AddToggle('TurretESP', {
+            Text = 'Turret ESP';
+        }):AddColorPicker('Turret_color', {
+            Text = 'clr';
+            Default = Color3.fromRGB(255, 255, 255);
+        }):OnChanged(function()
+            ESPLib.checks.turret = IsEnabled('TurretESP');
+        end);
+
+        World:AddToggle('ExplosiveESP', {
+            Text = 'Explosive ESP';
+        }):AddColorPicker('explosive_color', {
+            Text = 'clr';
+            Default = Color3.fromRGB(255, 255, 255);
+        }):OnChanged(function()
+            ESPLib.checks.turret = IsEnabled('ExplosiveESP');
+        end);
+
+        World:AddToggle('HumbugESP', {
+            Text = 'Humbug ESP';
+        }):AddColorPicker('humbug_color', {
+            Text = 'clr';
+            Default = Color3.fromRGB(255, 255, 255);
+        }):OnChanged(function()
+            ESPLib.checks.humbug = IsEnabled('HumbugESP');
+        end);
+
         GetCharacter = function(Player)
             return Characters[Player];
         end;
+
+
+        shared.__XennyWare.Connections['AutoBuy']  =GameStats:WaitForChild('RoundType').Changed:Connect(function(Value)
+            if (Value == 'Intermission') and (IsEnabled('AutoBuy')) then task.wait(GetProperty('AutoBuyDelay'))
+
+                if (IsEnabled('BuySlot1')) and (GetProperty('Slot_1') ~= nil) then 
+                    Network:InvokeServer('BuyItem', GetProperty('Slot_1'));
+                end;
+
+                if (IsEnabled('BuySlot2')) and (GetProperty('Slot_2') ~= nil) then 
+                    Network:InvokeServer('BuyItem', GetProperty('Slot_2'));
+                end;
+
+                if (IsEnabled('BuySlot3')) and (type(GetProperty('Slot_3')) == 'table') and (#GetProperty('Slot_3') > 0) then 
+                    for _, __ in next, GetProperty('Slot_3') do
+                        task.wait(0.1); 
+                        Network:InvokeServer('BuyItem', _);
+                    end;
+                end;
+            end;
+        end);
+
+        shared.__XennyWare.Connections['DroppedWepESP'] = DroppedWeapons.ChildAdded:Connect(function(Child)
+
+                repeat task.wait() until Child:FindFirstChildOfClass('Part');
+
+                if (IsEnabled('wep')) and (Child.Name ~= 'Bomb') then 
+                    ESPLib.AddToObject(Child, {
+                        Box = true;
+                        Name = true;
+                        Distance = true;
+                        Enabled = true;
+                        IsEnabled = 'wep';
+                        Color = GetProperty('wep_clr');
+                    });
+                end;
+
+                if (IsEnabled('BombESP')) and (Child.Name == 'Bomb') then 
+                    ESPLib.AddToObject(Child, {
+                        Box = true;
+                        Name = true;
+                        Distance = true;
+                        Enabled = true;
+                        IsEnabled = 'bomb';
+                        Color = GetProperty('Bomb_color');
+                    });
+                end;    
+
+                if (IsEnabled('TurretESP')) and (Child.Name == 'Combat Turret') then 
+                    ESPLib.AddToObject(Child, {
+                        Box = true;
+                        Name = true;
+                        Distance = true;
+                        Enabled = true;
+                        IsEnabled = 'turret';
+                        Color = GetProperty('Turret_color');
+                    });
+                end;
+
+                if (IsEnabled('ExplosiveESP')) and (Child.Name == 'Kane Explosive') then 
+                    ESPLib.AddToObject(Child, {
+                        Box = true;
+                        Name = true;
+                        Distance = true;
+                        Enabled = true;
+                        IsEnabled = 'explosive';
+                        Color = GetProperty('explosive_color');
+                    });
+                end;
+
+                if (IsEnabled('HumbugESP')) and (Child.Name == 'Humbug') then 
+                    ESPLib.AddToObject(Child, {
+                        Box = true;
+                        Name = true;
+                        Distance = true;
+                        Enabled = true;
+                        IsEnabled = 'humbug';
+                        Color = GetProperty('humbug_color');
+                    });
+                end;
+        end);
+
+        shared.__XennyWare.Connections['CharacterSelection']  = Player:WaitForChild('PlayerGui'):WaitForChild('CharacterSelection'):GetPropertyChangedSignal('Enabled'):Connect(function(Value)
+            if (Value) and (IsEnabled('AutoLockIn')) and (GetProperty('GameChar') ~= nil) then 
+                Network:InvokeServer('LockIn', GetProperty('GameChar'));
+            end;
+        end);
 
         Functions.GetTeam = function(Player)
 
@@ -3746,42 +4022,29 @@ elseif (PlaceId == 142823291) then
             return Player.SelectedTeam.Value, TeamColor;
         end;
 
-        ModuleLoader = require(game:GetService("ReplicatedStorage").Modules.Shared.ModuleLoader);
-        LoadedModules = ModuleLoader.LoadedModules;
-        local WeaponInfo = LoadedModules.WeaponInfo;
-        local Memory = LoadedModules.SharedMemory;
-        Network = LoadedModules.Network;
-        local Old = Network.FireServer;
-        local OldIndex;
 
-        local OldGet = LoadedModules.AttributesHandler.GetWeapon;
         hookfunction(LoadedModules.AttributesHandler.GetWeapon, function(p7, p8, p9)
 
-            if (IsEnabled('SkinChanger')) and (GetProperty('Skin') ~= nil) then     
+            if (IsEnabled('SkinChanger')) and (GetProperty('Skin') ~= nil) and (SkinData[p8] ~= nil) then     
                 local SkinName = SkinData[p8].Current;
 
-                if (SkinName == nil) or (SkinName == '') then print'skin is nil'; return ReplicatedStorage.Assets.Weapons[p8].Default end;
+                if (SkinName == nil) or (SkinName == '') then return ReplicatedStorage.Assets.Weapons[p8].Default end;
 
-                ReplicatedStorage.Assets.Weapons[p8][SkinName];
+                return ReplicatedStorage.Assets.Weapons[p8][SkinName];
             else
                 return ReplicatedStorage.Assets.Weapons[p8].Default;
             end;
         end);
-
-        --print(Old, Network.FireSever);
-        
-        --table.foreach(LoadedModules, print);
-        
-        
+     
         local function GetNearest()
         
-           Targets = {};
+           S_Targets = {};
         
            for Index, Value in next, Players:GetPlayers() do
                    if (Value ~= Player) and (Value.SelectedTeam.Value ~= Player.SelectedTeam.Value) then
                    if (not Characters[Value]) then continue end;
                    local Char = Characters[Value];
-                   if (not Char:FindFirstChild(GetProperty('Silent_Body'))) then continue end;
+                   if (not Char:FindFirstChild('Head')) then continue end;
                    if (Char:FindFirstChild('Humanoid').Health <= 0) or (Char:FindFirstChild('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) then continue end;
 
                    Distance = (Char.HumanoidRootPart.CFrame.p - Camera.CFrame.p).Magnitude;
@@ -3790,22 +4053,27 @@ elseif (PlaceId == 142823291) then
                    magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).Magnitude;
            
                    if (magnitude > GetProperty('SilentFOV')) then continue end;
-        
-                   table.insert(Targets, {Value, Distance, Char:FindFirstChild(GetProperty('Silent_Body'))});
+                    local ToReturn = GetProperty('Silent_Body');
+
+                   if (ToReturn == 'Random') then 
+                        ToReturn = CharParts[math.random(1, #CharParts)];
+                   end;
+
+                   table.insert(S_Targets, {Value, Distance, Char:FindFirstChild(ToReturn)});
                end;
            end;
         
-           if (#Targets > 1) then
-            table.sort(Targets, function(a, b)
+           if (#S_Targets > 1) then
+            table.sort(S_Targets, function(a, b)
                 return a[2] < b[2];
                end);
            end;
         
-           if (#Targets == 0) then
+           if (#S_Targets == 0) then
                return nil;
            end;
         
-           return Targets[1][3];
+           return S_Targets[1][3];
         end;
         
         local function ResolveRotation(Target)
@@ -3814,6 +4082,26 @@ elseif (PlaceId == 142823291) then
         
        
 
+        local function setPlayerMetatable(plr)
+            local playermeta = getrawmetatable(plr)
+            local old = playermeta.__index
+            setreadonly(playermeta, false)
+            playermeta.__index = newcclosure(function(index, key)
+                if checkcaller() and key == "Character" then
+                    return Characters[plr];
+                end
+                return old(index, key)
+            end)
+            setreadonly(playermeta, true)
+        end
+
+        for Index, Value in next, Players:GetPlayers() do 
+            if (Value ~= Player) then 
+                setPlayerMetatable(Value);
+            end;
+        end;
+
+        shared.__XennyWare.Connections['PlrMeta'] =  Players.PlayerAdded:Connect(setPlayerMetatable);
 
         Network.FireServer = function(...)
            local Args = {...};
@@ -3847,13 +4135,18 @@ elseif (PlaceId == 142823291) then
       --  local Old = require(Helpers.RecoilHandler).AddRecoil
 
         
-        RunService.RenderStepped:Connect(function()
+      shared.__XennyWare.Connections['RushPointLoop']  =RunService.RenderStepped:Connect(function()
 
             -- // suck my nuts
             
             SilentAimCircle.Visible = IsEnabled('SilentAim');
             SilentAimCircle.Color = GetProperty('SilentColor');
             SilentAimCircle.Position = WTS(Mouse.hit.p);
+            SilentAimCircle.Radius = GetProperty('SilentFOV');
+            
+            if (IsEnabled('Bhop')) and (Input:IsKeyDown(Enum.KeyCode.Space)) then 
+                PressKey(Enum.KeyCode.Space, true);
+            end;
 
             for Index, Value in next, WeaponInfo do task.wait()
                 if (type(Value) == 'table') then 
@@ -3861,7 +4154,7 @@ elseif (PlaceId == 142823291) then
                     if (IsEnabled('NoSpread')) then 
                         Value['Spread'] = 0;
                         Value['MovementSpreadTime'] = 0;
-                        Value['MovementSpreadPenalty'] = 0;
+                        --Value['MovementSpreadPenalty'] = 0;
                         Value['FirstShotSpread'] = 0;
                         Value['ScopeSpread'] = 0;
                     end;
@@ -3875,7 +4168,7 @@ elseif (PlaceId == 142823291) then
                     end;
 
                     if (IsEnabled('FastFire')) then 
-                        Value.FireRate = 0;
+                        Value.FireRate = GetProperty('FireRate');
                     end;
 
                     if (IsEnabled('AlwaysAuto')) then 
@@ -3927,15 +4220,6 @@ elseif (PlaceId == 142823291) then
                     end;
             end;
         end)
-        
-        OldIndex = hookmetamethod(game, '__index', newcclosure(function(self, Index, Value)
-            
-            if (Index == 'CameraShakeMultiplier') and (IsEnabled('NoCamShake')) then 
-                return OldIndex(self, Index, 0);
-            end;
-
-            return OldIndex(self, Index, Value);
-        end));
 
     elseif (game.PlaceId == 2474168535) then 
         Create('Westbound');

@@ -1,13 +1,13 @@
 -- // NOT MINE MADE BY WALLY
 local httpService = game:GetService('HttpService')
 local ThemeManager = {} do
-	ThemeManager.Folder = 'LinoriaLibSettings'
+	ThemeManager.Folder = 'Xenny-Ware/Settings'
 	-- if not isfolder(ThemeManager.Folder) then makefolder(ThemeManager.Folder) end
 
 	ThemeManager.Library = nil
 	ThemeManager.BuiltInThemes = {
 		['Default'] 		= { 1, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1c1c1c","AccentColor":"0055ff","BackgroundColor":"141414","OutlineColor":"323232"}') },
-		['Xenny-Ware'] = 	 {2, httpService:JSONDecode('{FontColor":"b0b0b0","MainColor":"222022","AccentColor":"ff00fc","BackgroundColor":"1c1c1c","OutlineColor":"373737}') },
+		['Xenny-Ware'] = 	 {2, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1c1c1c","AccentColor":"0055ff","BackgroundColor":"141414","OutlineColor":"323232"}') },
 		['Dracula'] 		= { 3, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"232533","AccentColor":"6271a5","BackgroundColor":"1b1c27","OutlineColor":"7c82a7"}') },
 		['Bitch Bot'] 		= { 4, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1e1e","AccentColor":"7e48a3","BackgroundColor":"232323","OutlineColor":"141414"}') },
 		['Kiriot Hub'] 		= { 5, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"30333b","AccentColor":"ffaa00","BackgroundColor":"1a1c20","OutlineColor":"141414"}') },

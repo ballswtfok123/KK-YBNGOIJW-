@@ -1,9 +1,9 @@
 return {
     ['Inori'] = 'UI Library';
-    ['Wally'] = 'Save Manager, Cool "guy"';
+    ['Wally'] = 'Save and theme Manager, Cool "guy"';
     ['Infinite Yield Creators'] = 'CFly';
-    ['Kiriot22'] = 'ESP Lib';
-    ['Averiias'] = 'How i learned silent aim';
+    ['Kiriot22'] = 'Old ESP Lib';
+    ['siper#9938'] = 'ESP Lib';
     ['Quenty'] = 'Maid Module';
     ['Arson'] = 'Hydroxide';
     ['xenny#0001'] = 'Everything Else';
