@@ -374,11 +374,15 @@ function EspLibrary.Init()
             local character, torso = EspLibrary.GetCharacter(player)
 
             if (character and torso) then
+
                 local onScreen, size, position, torsoPosition = EspLibrary.GetBoundingBox(torso)
                 local distance = (currentCamera.CFrame.Position - torso.Position).Magnitude
                 local canShow, enabled = onScreen and (size and position), EspLibrary.options.enabled
                 local team, teamColor = EspLibrary.GetTeam(player)
                 local color = EspLibrary.options.teamColor and teamColor or nil
+
+                if (not character:FindFirstChildOfClass('Humanoid')) then enabled = false end;
+                if (character:FindFirstChildOfClass('Humanoid'):GetState() == Enum.Humanoid.HumanoidStateType.Dead) or (character:FindFirstChildOfClass('Humanoid').Health <= 0) then enabled = false end;
 
                 if (EspLibrary.options.fillColor ~= nil) then
                     color = EspLibrary.options.fillColor

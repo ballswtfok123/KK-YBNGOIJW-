@@ -172,7 +172,6 @@ local function Unload()
         Value:Disconnect();
     end;
 
-    ESPLib['MainLoop']:Disconnect();
     ESPLib = {};
     HighlightFolder:ClearAllChildren();
 
@@ -223,11 +222,7 @@ local Functions = shared.__XennyWare.Functions; -- // >w<
 local Window, Main, Settings, AimbotBox, LocalBox, Visuals, Misc, Debug, OldNmaeCall, PlayerInfo, Luas, TabH, TabB, Rage, OldNameCall, Themes
 
 local function GetCharacter(Target)
-    if (Target.Character ~= nil) then 
-        return Target.Character;
-    end;
-
-    return nil;
+    return Target.Character ~= nil and Target.Character or nil;
 end;
 
 -- // Function for checking if certain ui features are enabled (QOL)
@@ -251,7 +246,7 @@ Functions.GetTeam = function(Player)
 end;
 
 Functions.GetNearest = function(TeamCheck)
-    if (Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
+    if (Player.Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
         return;
     end;
 
@@ -274,7 +269,7 @@ Functions.Chat = function(Message)
 end;
 
 Functions.GoTo = function(Position)
-    if (Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
+    if (Player.Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
         return;
     end;
     
@@ -286,7 +281,7 @@ Functions.IsVisible = function(Part)
 end;
 
 Functions.CharCheck = function()
-    if (Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
+    if (Player.Character == nil) or (RootPart == nil) or (Humanoid == nil) then 
         return false;
     end;
 
@@ -358,7 +353,7 @@ local function CleanupModules()
 end;
 
 local function AA(angleX, angleY)
-    if (Character and RootPart) then
+    if (Player.Character and Player.Character.HumanoidRootPart~= nil) then
         RootPart.CFrame = CFrame.new(RootPart.Position, RootPart.Position + Vector3.new(Camera.CFrame.lookVector.X, 0, Camera.CFrame.lookVector.Z)) * CFrame.Angles(math.rad(angleX), math.rad(angleY), 0);
     end
 end;
@@ -592,8 +587,8 @@ local function ListCharacterParts()
 
     local Parts = {};
 
-    if (Character ~= nil) and (RootPart ~= nil) then 
-        for Index, Value in next, Character:GetChildren() do 
+    if (Player.Character ~= nil) and (Player.Character.HumanoidRootPart ~= nil) then 
+        for Index, Value in next, Player.Character:GetChildren() do 
             if (Value:IsA('BasePart')) or (Value:IsA('Part')) then 
                 Parts[Value.Name] = Value.Name;
             end;
@@ -741,9 +736,8 @@ Functions.ServerHop = Teleport;
 
 local function LoadUniversal(LoadRage, UseDefault)
 
-    Character = GetCharacter(Player) ~= nil and GetCharacter(Player) or nil;
-    Humanoid = Character ~= nil and Character:FindFirstChildOfClass('Humanoid') ~= nil and Character:FindFirstChildOfClass('Humanoid') or nil;
-    RootPart = Character ~= nil and Character.PrimaryPart ~= nil and Character.PrimaryPart or nil;
+    Humanoid = Player.Character ~= nil and Player.Character:FindFirstChildOfClass('Humanoid') ~= nil and Player.Character:FindFirstChildOfClass('Humanoid') or nil;
+    RootPart = Player.Character ~= nil and Player.Character.PrimaryPart ~= nil and Player.Character.PrimaryPart or nil;
 
     TabB = Main:AddLeftTabbox();
     AimbotBox = TabB:AddTab('Aimbot');
@@ -881,10 +875,10 @@ local function LoadUniversal(LoadRage, UseDefault)
 
     local Smoothness = AimbotBox:AddSlider('AimbotSmoothness', {
         Text = 'Smoothness';
-        Min = 1;
+        Min = 0;
         Max = 25;
         Default = 1;
-        Rounding = 0.5;
+        Rounding = 2;
     });
 
     local PredictionAmount = AimbotBox:AddSlider('AimbotPredictionAmount', {
@@ -971,7 +965,7 @@ local function LoadUniversal(LoadRage, UseDefault)
         Text = 'Fly';
         Default = 'NONE';
     }):OnChanged(function()
-        if (not IsEnabled('Fly')) and (Character ~= nil) and (RootPart ~= nil)   then 
+        if (not IsEnabled('Fly')) and (Player.Character ~= nil) and (Player.Character.HumanoidRootPart ~= nil)   then 
             RootPart.Anchored = false
         end;
     end);
@@ -1160,8 +1154,8 @@ local function LoadUniversal(LoadRage, UseDefault)
         Text = 'Self Chams Color';
         Default = Color3.fromRGB(255, 255, 255);
     }):OnChanged(function()
-        if (not IsEnabled('SelfChams')) and (Character ~= nil) then 
-            for Index, Value in next, Character:GetChildren() do 
+        if (not IsEnabled('SelfChams')) and (Player.Character ~= nil) then 
+            for Index, Value in next, Player.Character:GetChildren() do 
                 if (table.find(WhitelistedClasses, Value.ClassName)) then 
                     Value.Material = 'SmoothPlastic';
                 end;
@@ -1214,7 +1208,7 @@ local function LoadUniversal(LoadRage, UseDefault)
             Highlight.OutlineColor = GetProperty('SelfHighOut');
             Highlight.FillColor = GetProperty('SelfHighFill');
 
-            if (Character ~= nil) then 
+            if (Player.Character ~= nil) then 
                 Highlight.Adornee = Character;
             end;
         elseif (HighlightFolder:FindFirstChild(Player.Name)) then 
@@ -1246,6 +1240,10 @@ local function LoadUniversal(LoadRage, UseDefault)
         end;
     end);
 
+
+    Render:AddToggle('CustomFOV', {
+        Text = 'Custom FOV';
+    });
 
     local CamFOV = Render:AddSlider('CamFOV', {
         Text = 'Field of View';
@@ -1433,7 +1431,7 @@ local function LoadUniversal(LoadRage, UseDefault)
     ESP:AddToggle("DontShow", {
         Text = 'Dont Show Team'
     }):OnChanged(function()
-        ESPLib.options.teamCheck = not IsEnabled('DontShow');
+        ESPLib.options.teamCheck = IsEnabled('DontShow');
     end);
 
 
@@ -1512,11 +1510,11 @@ local function LoadUniversal(LoadRage, UseDefault)
     local Spectate = PlayerBox:AddToggle('Spectate', {
         Text = 'Spectate';
     }):OnChanged(function()
-        if (IsEnabled('Spectate')) and (Character ~= nil) and (Humanoid ~= nil) and (GetProperty('PlrTarget') ~= nil) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (Players:FindFirstChild(GetProperty('PlrTarget')) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChildOfClass('Humanoid')) then 
+        if (IsEnabled('Spectate')) and (Player.Character ~= nil) and (Player.Character.Humanoid ~= nil) and (GetProperty('PlrTarget') ~= nil) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (Players:FindFirstChild(GetProperty('PlrTarget')) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChildOfClass('Humanoid')) then 
             Camera.CameraSubject = GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChildOfClass('Humanoid');
         end;
 
-        if (not IsEnabled('Spectate')) and (Humanoid ~= nil) and (Character ~= nil) then 
+        if (not IsEnabled('Spectate')) and (Humanoid ~= nil) and (Player.Character ~= nil) then 
             Camera.CameraSubject = Humanoid;
         end;
     end);
@@ -1536,13 +1534,13 @@ local function LoadUniversal(LoadRage, UseDefault)
         end;
 
         TargetPlayer = Players:FindFirstChild(GetProperty('PlrTarget')) or 'nil';
-        TargetTeam =  TargetPlayer.Team ~= nil and type(TargetPlayer.Team.Name) == 'string' and TargetPlayer.Team.Name or 'None';
+        TargetTeam =  GetTeam(TargetPlayer) ~= nil and GetTeam(TargetPlayer) or 'None';
         StudsAway = GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChild('HumanoidRootPart') ~= nil and Player:DistanceFromCharacter(GetCharacter(TargetPlayer):FindFirstChild('HumanoidRootPart').Position) or 'Not Found';
         CurrentHealth = TargetPlayer ~= nil and GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid') and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health or 0;
         CurrentTool = GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChildOfClass('Tool') and GetCharacter(TargetPlayer):FindFirstChildOfClass('Tool').Name or 'None';
 
         HealthColor = GetCharacter(TargetPlayer) ~= nil and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health >= 75 and Color3.fromRGB(0, 255, 0) or GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health <= 75 and GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health >= 35 and Color3.fromRGB(255, 127, 0) or GetCharacter(TargetPlayer):FindFirstChildOfClass('Humanoid').Health < 34 and Color3.fromRGB(255, 0, 0);
-        TeamColor = TargetPlayer.Team ~= nil and TargetPlayer.Team.Name ~= nil and TargetPlayer.Team.TeamColor ~= nil and TargetPlayer.Team.TeamColor or Color3.fromRGB(255, 255, 255);
+        TeamColor = TargetPlayer.Team ~= nil and TargetPlayer.Team.Color ~= nil and TargetPlayer.Team.Color or Color3.fromRGB(255, 255, 255);
 
         
         DisplayName:SetText('Display Name: ' .. TargetPlayer.DisplayName);
@@ -1555,7 +1553,7 @@ local function LoadUniversal(LoadRage, UseDefault)
     end);
 
     local TeleportTarget = PlayerBox:AddButton('Teleport', function()
-        if (Character ~= nil) and (RootPart ~= nil) and (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart')) then 
+        if (Player.Character ~= nil) and (RootPart ~= nil) and (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart')) then 
             RootPart.CFrame = GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart').CFrame;
         end;
     end);
@@ -1645,13 +1643,13 @@ local function LoadUniversal(LoadRage, UseDefault)
 
                 -- // Aimbot whitelist check
 
-                if (table.find(Options.Whitelist.Value, Player.Name) ~= nil) then 
+                if (table.find(Options.Whitelist.Value, Player.Name) ~= false) then 
                     continue;
                 end;
 
                 -- // Check if teamcheck is enabled
 
-                if (Checks.Value['Team'] ~= nil) and (Player.Team == Value.Team) then
+                if (Checks.Value['Team'] ~= nil) and (Functions.GetTeam(Player) == Functions.GetTeam(Value)) then
                     continue;
                 end;
 
@@ -1761,7 +1759,7 @@ local function LoadUniversal(LoadRage, UseDefault)
     end);
 
     shared.__XennyWare.Connections['InputBegan'] = Input.InputBegan:Connect(function(Key)
-        if (Key.KeyCode == Enum.KeyCode.LeftAlt) and (IsEnabled('ClickTeleport') and (Character ~= nil) and (RootPart ~= nil) and (Humanoid ~= nil)) then 
+        if (Key.KeyCode == Enum.KeyCode.LeftAlt) and (IsEnabled('ClickTeleport') and (Player.Character ~= nil) and (RootPart ~= nil) and (Humanoid ~= nil)) then 
             local EndPos = Mouse.Hit
             RootPart.CFrame = EndPos + Vector3.new(0, 3, 0)
         end;
@@ -1838,7 +1836,7 @@ local function LoadUniversal(LoadRage, UseDefault)
                 return oldNewIndex(t, idx, 'Classic');
             end;
         end;
-        if (idx == 'FieldOfView' and not checkcaller()) then
+        if (idx == 'FieldOfView' and IsEnabled('CustomFOV') and not checkcaller()) then
             return oldNewIndex(t, idx, CamFOV.Value);
         end;
         if (idx == 'ClockTime' and not checkcaller()) then
@@ -1856,7 +1854,7 @@ local function LoadUniversal(LoadRage, UseDefault)
         local Args = { ... };
 
         
-        if (Method:lower() == 'kick') then 
+        if (Method:lower() == 'kick') and (self == Player) then 
             return false;
         end;
         
@@ -1873,7 +1871,7 @@ local function LoadUniversal(LoadRage, UseDefault)
          
         -- // Call Main Functions
 
-        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) then  -- // Only check for performance reasons
+        if (IsEnabled('AimbotEnabled')) and (Player.Character ~= nil) then  -- // Only check for performance reasons
             GetAimbotTarget();
         end;
 
@@ -1883,6 +1881,7 @@ local function LoadUniversal(LoadRage, UseDefault)
 
         ColorCorrection.Contrast = GetProperty('Contrast');
         ColorCorrection.Saturation = GetProperty('Saturation');
+        ColorCorrection.Enabled = IsEnabled('CustomAmbient');
         
         -- // Handle FOV Circles
 
@@ -1912,7 +1911,7 @@ local function LoadUniversal(LoadRage, UseDefault)
         Library:SetWatermark(('Xenny-Ware | %s FPS | %s MS | Build %s | %s'):format(math.ceil(FPS), math.ceil(Player:GetNetworkPing()), Version, os.date()));
         -- // Aimbot handler
 
-        if (IsEnabled('AimbotEnabled')) and (Character ~= nil) and (Input:IsMouseButtonPressed(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (GetCharacter(Targets[1][1]) ~= nil) then 
+        if (IsEnabled('AimbotEnabled')) and (Input:IsMouseButtonPressed(Enum.UserInputType[GetProperty('MouseButton')])) and (#Targets > 0) and (Targets[1][1] ~= nil) and (GetCharacter(Targets[1][1]) ~= nil) then 
 
 
             -- // Sort through the targets table by distance or health
@@ -1926,6 +1925,7 @@ local function LoadUniversal(LoadRage, UseDefault)
                     return a[3] < b[3];
                 end);
             end;
+
 
             if (Targets[1][1] ~= nil) and (GetCharacter(Targets[1][1]) ~= nil) then 
                 -- // Get position of the part
@@ -1952,13 +1952,14 @@ local function LoadUniversal(LoadRage, UseDefault)
                 end;
 
             end;
+
         end;
 
         if (Options.BindFly.Toggled == false) and (RootPart ~= nil) then 
             RootPart.Anchored = false;
         end;
 
-        if (IsEnabled('LoopTeleport')) and (Character ~= nil) and (RootPart ~= nil) and (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart')) then 
+        if (IsEnabled('LoopTeleport')) and (Player.Character ~= nil) and (RootPart ~= nil) and (GetProperty('PlrTarget') ~= false) and (Players:FindFirstChild(GetProperty('PlrTarget'))) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))) ~= nil) and (GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart')) then 
             RootPart.CFrame = GetCharacter(Players:FindFirstChild(GetProperty('PlrTarget'))):FindFirstChild('HumanoidRootPart').CFrame;
         end;
 
@@ -1981,7 +1982,7 @@ local function LoadUniversal(LoadRage, UseDefault)
 
         -- // Walkspeed and jumppower handler
 
-        if (Character ~= nil) then 
+        if (Player.Character ~= nil) then 
             
                         -- // Hitbox expander handler
 
@@ -1992,7 +1993,7 @@ local function LoadUniversal(LoadRage, UseDefault)
                                     -- // Checks 
             
             
-                                    if (HitboxChecks.Value['Team'] ~= nil) and (Player.Team == Value.Team) then 
+                                    if (HitboxChecks.Value['Team'] ~= nil) and (Functions.GetTeam(Player) == Functions.GetTeam(Value)) then 
                                         continue;
                                     end;
             
@@ -2066,10 +2067,10 @@ local function LoadUniversal(LoadRage, UseDefault)
             Lighting.Brightness = GetProperty('Brightness');
             Lighting.ClockTime = GetProperty('ClockTime');
             Lighting.GlobalShadows = IsEnabled('GlobalShadows');
-            Camera.FieldOfView = CamFOV.Value;
+            if (IsEnabled('CustomFOV')) then Camera.FieldOfView = CamFOV.Value end;
 
-            if (IsEnabled('SelfChams')) and (Character ~= nil) then 
-                for Index, Value in next, Character:GetChildren() do 
+            if (IsEnabled('SelfChams')) and (Player.Character ~= nil) then 
+                for Index, Value in next, Player.Character:GetChildren() do 
 
                     if (IsEnabled('DeleteAccessories')) and (Value:IsA('Accessory')) or (Value:IsA('Hat')) or (Value:IsA('Shirt')) or (Value:IsA('Pants')) then 
                         Value:Destroy();
@@ -2351,13 +2352,13 @@ elseif (PlaceId == 142823291) then
 
       local function Stab()
           local Strings = {'Down'; 'Slash'}
-          if (Character ~= nil) and (Character:FindFirstChildOfClass('Tool')) and (Character:FindFirstChildOfClass('Tool'):FindFirstChild('Stab')) then 
+          if (Player.Character ~= nil) and (Character:FindFirstChildOfClass('Tool')) and (Player.Character:FindFirstChildOfClass('Tool'):FindFirstChild('Stab')) then 
              Character:FindFirstChildOfClass('Tool'):FindFirstChild('Stab'):FireServer(Strings[math.random(1, #Strings)]);
           end;
       end;
 
       local function Shoot(Location)
-         if (Character ~= nil) and (Character:FindFirstChild('Gun')) and (Character:FindFirstChild('Gun'):FindFirstChild('KnifeServer')) and (Character:FindFirstChild('Gun'):FindFirstChild('KnifeServer'):FindFirstChild('ShootGun')) then 
+         if (Player.Character ~= nil) and (Character:FindFirstChild('Gun')) and (Character:FindFirstChild('Gun'):FindFirstChild('KnifeServer')) and (Player.Character:FindFirstChild('Gun'):FindFirstChild('KnifeServer'):FindFirstChild('ShootGun')) then 
             Character:FindFirstChild('Gun'):FindFirstChild('KnifeServer'):FindFirstChild('ShootGun'):InvokeServer(1, Location, 'AH');
          end;
       end;
@@ -2523,7 +2524,7 @@ elseif (PlaceId == 142823291) then
                SilentAimCircle.Position = WTS(Mouse.hit.p);
            end;
 
-           if (Character ~= nil) and (RootPart ~= nil) and (Humanoid ~= nil) then 
+           if (Player.Character ~= nil) and (RootPart ~= nil) and (Humanoid ~= nil) then 
                if (IsEnabled('KillAura')) and (Character:FindFirstChildOfClass('Tool')) then 
                     if (GetProperty('KillAuraWeapons')[Character:FindFirstChildOfClass('Tool').Name] == nil) then 
                         return;
@@ -3319,7 +3320,7 @@ elseif (PlaceId == 142823291) then
                 end;
             end;
 
-            if (Character ~= nil) and (Humanoid ~= nil) then 
+            if (Player.Character ~= nil) and (Player.Character.Humanoid ~= nil) then 
                 for Index, Value in next, Character:GetChildren() do 
                     if (IsEnabled('NoArms')) and (string.find(Value.Name:lower(), 'arm')) then 
                         Value:Destroy();
@@ -3376,7 +3377,7 @@ elseif (PlaceId == 142823291) then
 
         local function Hit(Plr)
 
-            if (Plr == nil) or (GetCharacter(Plr) == nil) or (not GetCharacter(Plr):FindFirstChild('Head')) then print'Check Failed'; return end;
+            if (Plr == nil) or (GetCharacter(Plr) == nil) or (not GetCharacter(Plr):FindFirstChild('Head')) then return end;
 
             -- // found DA KILL REMOTE EZAZZZZZ (:scream:) (:cream:
 
@@ -3443,13 +3444,13 @@ elseif (PlaceId == 142823291) then
         });
 
         local GoToContainer = GameFunctions:AddButton('Teleport To Container', function()
-            if (Character ~= nil) and (Character:FindFirstChild('Head')) and (GetProperty('Container') ~= nil) then 
+            if (Player.Character ~= nil) and (Character:FindFirstChild('Head')) and (GetProperty('Container') ~= nil) then 
                 RootPart.CFrame = ContainerPath:FindFirstChild(GetProperty('Container')):FindFirstChildOfClass('MeshPart').CFrame;
             end;
         end);
 
         local GoToPickup = GameFunctions:AddButton('Teleport To Pick Up', function()
-            if (Character ~= nil) and (Character:FindFirstChild('Head')) and (GetProperty('PickUp') ~= nil) then 
+            if (Player.Character ~= nil) and (Character:FindFirstChild('Head')) and (GetProperty('PickUp') ~= nil) then 
                 RootPart.CFrame = PickUps:FindFirstChild(GetProperty('PickUp')):FindFirstChildOfClass('Part').CFrame;
             end;
         end);
@@ -4088,7 +4089,7 @@ elseif (PlaceId == 142823291) then
             setreadonly(playermeta, false)
             playermeta.__index = newcclosure(function(index, key)
                 if checkcaller() and key == "Character" then
-                    return Characters[plr];
+                    return GetCharacter(plr);
                 end
                 return old(index, key)
             end)
@@ -4224,7 +4225,165 @@ elseif (PlaceId == 142823291) then
     elseif (game.PlaceId == 2474168535) then 
         Create('Westbound');
         LoadUniversal();
-        
+    elseif (game.PlaceId == 3678761576) then 
+        Create('Entrenched');
+        LoadUniversal();
+
+        local GunMods = TabH:AddTab('Gun Mods');
+        local SilentAim = TabB:AddTab('Silent Aim');
+
+        local SilentAimCircle = Drawing.new('Circle');
+        SilentAimCircle.Radius = 150;
+        SilentAimCircle.Color = Color3.fromRGB(255, 255, 255);
+        SilentAimCircle.Visible = false;
+
+        GunMods:AddToggle('NoRecoil', {
+            Text = 'No Recoil';
+        });
+
+        GunMods:AddToggle('NoSpread', {
+            Text = 'No Spread';
+        });
+
+        SilentAim:AddToggle('SilentAim', {
+            Text = 'Enabled';
+        }):AddColorPicker('SilentColor', {
+            Text = 'Silent Color';
+            Default = Color3.fromRGB(255, 255, 255);
+        });
+
+        SilentAim:AddDropdown('SilentBody', {
+            Text = 'Hit Part';
+            Values = {'Head'; 'HumanoidRootPart'; 'Random'};
+            Default = 1;
+        });
+
+        SilentAim:AddSlider('SilentFOV', {
+            Text = 'FOV';
+            Min = 0;
+            Max = 500;
+            Default = 150;
+            Rounding = 2;
+        });
+
+        local OldEquip, OldRecoil, OtherNameCall;
+
+        for Index, Value in next, getgc(true) do 
+            if (type(Value) == 'function') and (islclosure(Value)) and (debug.getinfo(Value).name == 'Equip') then 
+                OldEquip = hookfunction(Value, function(...)
+                    local Args = {...};
+
+                    if (IsEnabled('NoRecoil')) and (Args[1] ~= nil) and (Args[1].RecoilPattern ~= nil) then 
+                        Args[1].RecoilPattern = {};
+                        return OldEquip(unpack(Args));
+                    end;
+
+                    return OldEquip(...);
+                end);
+            end;
+
+            if (type(Value) == 'function') and (islclosure(Value)) and (debug.getinfo(Value).name == 'Recoil') then 
+                OldRecoil = hookfunction(Value, function(...)
+                    if (IsEnabled('NoRecoil')) then
+                        return;
+                    end;
+
+                    return OldRecoil(...);
+                end);
+            end;
+        end; 
+
+        local function GetSilent()
+            local Nearest = {};
+
+            for Index, Value in next, Players:GetPlayers() do 
+                if (Value ~= Player) and (Value.Character) and (Value.Team ~= Player.Team)  then 
+                    
+                   if (not Value.Character:FindFirstChildOfClass('Humanoid')) then continue end;
+                   if (Value.Character:FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) then continue end;
+                   if (not Value.Character:FindFirstChild('HumanoidRootPart')) then continue end;
+                   if (not Value.Character:FindFirstChild('Head')) then continue end;
+                   if (Value.Character == nil) then continue end;
+                   if (not Value.Character:FindFirstChild(GetProperty('SilentBody'))) then continue end;
+
+                   Distance = (Value.Character.HumanoidRootPart.CFrame.p - Camera.CFrame.p).Magnitude;
+                   worldPoint = Value.Character:FindFirstChild(GetProperty('SilentBody')).Position;
+                   vector, onScreen = workspace.CurrentCamera:WorldToScreenPoint(worldPoint);
+                   magnitude = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(vector.X, vector.Y)).Magnitude;
+
+                   if (onScreen) and (magnitude <= GetProperty('SilentFOV')) and (Value.Character) then 
+                        table.insert(Nearest, {Distance, Value.Character:FindFirstChild(GetProperty('SilentBody'))});
+                   end;
+                end;
+            end;
+
+            if (#Nearest == 0) then return nil end;
+
+            if (#Nearest > 1) then 
+                table.sort(Nearest, function(Index, Value)
+                    return Index[1] < Value[1];
+                end);
+            end;
+
+            return Nearest[1][2];
+        end;
+
+        OtherNameCall = hookmetamethod(game, '__namecall',  newcclosure(function(self, ...)
+            local Args = {...};
+            local Method = getnamecallmethod();
+
+            if (Method:lower() == 'fireserver') and (self.Name:lower() == 'shoot') and (IsEnabled('SilentAim')) then 
+                local Nearest = GetSilent();
+
+                if (Nearest == nil) then return OtherNameCall(self, ...); end;
+                Args[2] = Nearest.Position;
+
+                return OtherNameCall(self, unpack(Args));
+            end;
+
+            return OtherNameCall(self, ...);
+        end));
+
+        shared.__XennyWare.Connections['EntrenchedLoop'] = RunService.Stepped:Connect(function()
+
+            SilentAimCircle.Radius = GetProperty('SilentFOV');
+            SilentAimCircle.Visible = IsEnabled('SilentAim');
+            SilentAimCircle.Position = WTS(Mouse.hit.p);
+
+            if (not Player.Character) or (not Player.Character:FindFirstChild('HumanoidRootPart')) then return end;
+
+            if (Player.Character:FindFirstChildOfClass('Tool')) then 
+                local Tool = Player.Character:FindFirstChildOfClass('Tool') if (not Tool) then return end;
+
+                if (Tool:GetAttribute('Recoil')) and (IsEnabled('NoRecoil')) then 
+                    Tool:SetAttribute('Recoil', 0);
+
+                    if (Tool:FindFirstChild('Bloom')) then 
+                        Tool:FindFirstChild('Bloom').Value = 0;
+                    end;
+                end;
+
+                if (Tool:GetAttribute('SpreadDefault')) and (IsEnabled('NoSpread')) then 
+                    Tool:SetAttribute('SpreadDefault', 0);
+                end;
+            end;
+        end);
+    elseif (game.PlaceId == 633284182) then 
+        Create('Fireteam');
+        LoadUniversal();
+
+        Functions.GetTeam = function(Plr)
+            if (not Plr:FindFirstChild('PlayerData')) or (not Plr:FindFirstChild('PlayerData'):FindFirstChild('TeamValue')) then return nil end;
+            return Plr:FindFirstChild('PlayerData'):FindFirstChild('TeamValue').Value;
+        end;
+
+        ESPLib.GetTeam = function(Plr)
+            if (not Plr:FindFirstChild('PlayerData')) or (not Plr:FindFirstChild('PlayerData'):FindFirstChild('TeamValue')) then return nil end;
+
+
+            return Plr:FindFirstChild('PlayerData'):FindFirstChild('TeamValue').Value;
+        end;
+
 else -- // Universal
 
     Create('Universal');

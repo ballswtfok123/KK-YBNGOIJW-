@@ -71,7 +71,6 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Save(name)
-		print(name);
 
 		local fullPath = self.Folder .. '/Settings/' .. tostring(game.PlaceId) .. '/' .. name .. '.json'
 
@@ -171,7 +170,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:LoadAutoloadConfig()
-		if isfile(self.Folder .. '/Settings/'  .. game.PlaceId .. '/' .. 'autoload.txt') then
+		if isfile(self.Folder .. '/Settings/' .. 'autoload.txt') then
 			local name = readfile(self.Folder .. '/settings/' .. game.PlaceId .. '/' .. 'autoload.txt')
 
 			local success, err = self:Load(name)
@@ -186,7 +185,8 @@ local SaveManager = {} do
 
 	function SaveManager:BuildConfigSection(tab)
 		assert(self.Library, 'Must set SaveManager.Library')
-
+		makefolder(self.Folder .. '/Settings/' .. game.PlaceId);
+		
 		local section = tab:AddRightGroupbox('Configuration')
 
 		section:AddDropdown('SaveManager_ConfigList', { Text = 'Config list', Values = self:RefreshConfigList(), AllowNull = true })
@@ -251,7 +251,7 @@ local SaveManager = {} do
 		
 		section:AddButton('Autoload config', function()
 			local name = Options.SaveManager_ConfigList.Value
-			writefile(self.Folder .. '/Settings/' .. game.PlaceId .. 'autoload.txt', name)
+			writefile(self.Folder .. '/Settings/' .. 'autoload.txt', name)
 			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
 			self.Library:Notify(string.format('Set %q to auto load', name))
 		end)
@@ -265,8 +265,8 @@ local SaveManager = {} do
 
 		SaveManager.AutoloadLabel = section:AddLabel('Current autoload config: none', true)
 
-		if isfile(self.Folder .. '/Settings/' .. game.PlaceId .. '/' .. 'autoload.txt') then
-			local name = readfile(self.Folder .. '/Settings/' .. game.PlaceId .. '/' ..'autoload.txt')
+		if isfile(self.Folder .. '/Settings/' .. 'autoload.txt') then
+			local name = readfile(self.Folder .. '/Settings/' ..'autoload.txt')
 			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
 		end
 
