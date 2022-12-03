@@ -382,7 +382,7 @@ function EspLibrary.Init()
                 local color = EspLibrary.options.teamColor and teamColor or nil
 
                 if (not character:FindFirstChildOfClass('Humanoid')) then enabled = false end;
-                if (character:FindFirstChildOfClass('Humanoid'):GetState() == Enum.Humanoid.HumanoidStateType.Dead) or (character:FindFirstChildOfClass('Humanoid').Health <= 0) then enabled = false end;
+                if (character:FindFirstChildOfClass('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) or (character:FindFirstChildOfClass('Humanoid').Health <= 0) then enabled = false end;
 
                 if (EspLibrary.options.fillColor ~= nil) then
                     color = EspLibrary.options.fillColor

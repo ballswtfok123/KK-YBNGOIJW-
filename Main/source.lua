@@ -517,9 +517,6 @@ end;
 setreadonly(table, false);
 
 table.find = function(Table, Index)
-    assert(Table, '[1] Table cannot be nil!');
-    assert(Index, '[2] Index cannot be nil!');
-    assert(type(Table) == 'table', 'Table must be a table!');
     
     for _, __ in next, Table do 
         if (__ == Index) then 
@@ -4046,7 +4043,7 @@ elseif (PlaceId == 142823291) then
                    if (not Characters[Value]) then continue end;
                    local Char = Characters[Value];
                    if (not Char:FindFirstChild('Head')) then continue end;
-                   if (Char:FindFirstChild('Humanoid').Health <= 0) or (Char:FindFirstChild('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) then continue end;
+                 --  if (Char:FindFirstChild('Humanoid').Health <= 0) or (Char:FindFirstChild('Humanoid'):GetState() == Enum.HumanoidStateType.Dead) then continue end;
 
                    Distance = (Char.HumanoidRootPart.CFrame.p - Camera.CFrame.p).Magnitude;
                    worldPoint = Char.Head.Position;
